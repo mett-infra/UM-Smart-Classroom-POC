@@ -1,0 +1,363 @@
+/* Lecturer portal extras. Uses tokens from tokens.css. */
+
+.lec-week-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lec-week-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.lec-week-num.now {
+  background: var(--gold-50);
+  border-color: #e7cf98;
+  color: var(--gold-600);
+}
+
+.lec-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lec-type {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.lec-type.on {
+  border-color: var(--primary);
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+/* Attendance */
+.att-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.att-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.att-chip strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.att-seg .seg button {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.qr-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.qr-box {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #fff;
+  position: relative;
+}
+
+.qr-count {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.checkin-feed {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.checkin-feed div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  animation: lec-in 0.25s ease;
+}
+
+@keyframes lec-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Gradebook */
+.mark-input {
+  width: 72px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  text-align: right;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+}
+
+.mark-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus);
+}
+
+.mark-input.empty {
+  background: var(--amber-50);
+  border-color: #f2dcb2;
+}
+
+.gb-total {
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* AI assistant */
+.ai-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ai-action {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  text-align: left;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ai-action:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.ai-action.on {
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+
+.ai-action strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.ai-action span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.transcript {
+  display: grid;
+  gap: 2px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.transcript div {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.transcript div:last-child {
+  border-bottom: 0;
+}
+
+.transcript time {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.skeleton span {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef1f6 0%, #f8f9fb 50%, #eef1f6 100%);
+  background-size: 200% 100%;
+  animation: lec-shimmer 1.1s linear infinite;
+}
+
+@keyframes lec-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.ai-out h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.ai-out p,
+.ai-out li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.ai-out ul,
+.ai-out ol {
+  padding-left: 20px;
+  margin: 8px 0 0;
+}
+
+.mcq {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.mcq strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.mcq ol {
+  list-style: upper-alpha;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.mcq li {
+  padding: 2px 0;
+}
+
+.mcq li.correct {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.plan-step {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.plan-step:last-child {
+  border-bottom: 0;
+}
+
+.plan-step b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cap-pair {
+  border-left: 3px solid var(--primary-100);
+  padding: 6px 0 6px 12px;
+  margin-bottom: 12px;
+}
+
+.cap-pair p:first-child {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cap-pair p:last-child {
+  color: var(--ink);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.check-msg-to {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin-bottom: 14px;
+}
+
+@media (max-width: 640px) {
+  .qr-wrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .ai-actions,
+  .lec-type-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .att-chip strong {
+    font-size: 18px;
+  }
+}

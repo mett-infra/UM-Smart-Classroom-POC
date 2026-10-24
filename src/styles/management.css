@@ -1,0 +1,268 @@
+/* Management portal extras */
+
+.mg-greet-sub {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.mg-room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.mg-room {
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mg-room:hover {
+  border-color: var(--line-strong);
+}
+
+.mg-room.on {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-50);
+}
+
+.mg-room .name {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.mg-room .where {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mg-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.mg-control {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.mg-control.on {
+  border-color: var(--primary-100);
+  background: var(--primary-50);
+}
+
+.mg-control .icon-tile {
+  width: 34px;
+  height: 34px;
+}
+
+.mg-control strong {
+  display: block;
+  font-size: 13px;
+}
+
+.mg-control span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mg-routine {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mg-routine:last-child {
+  border-bottom: 0;
+}
+
+.mg-report {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mg-report:last-child {
+  border-bottom: 0;
+}
+
+.mg-report .grow p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.mg-gen {
+  width: 120px;
+}
+
+.mg-sort {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.mg-sort.on {
+  color: var(--ink);
+}
+
+.mg-profile-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.mg-profile-head h3 {
+  font-size: 17px;
+}
+
+.mg-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+}
+
+.mg-profile-stats > div {
+  padding: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.mg-profile-stats > div:first-child {
+  border-left: 0;
+}
+
+.mg-profile-stats strong {
+  display: block;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.mg-profile-stats span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mg-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+}
+
+.mg-filters .search-field {
+  flex: 1;
+  min-width: 200px;
+}
+
+.mg-filters .select {
+  width: auto;
+  min-width: 150px;
+}
+
+.mg-tick {
+  transition: color 0.4s;
+}
+
+.mg-measure {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mg-measure:last-child {
+  border-bottom: 0;
+}
+
+.mg-print-note {
+  display: none;
+}
+
+@media print {
+  .sidebar,
+  .topbar,
+  .app-footer,
+  .page-actions,
+  .toasts {
+    display: none !important;
+  }
+
+  .shell {
+    display: block;
+  }
+
+  .mg-print-note {
+    display: block;
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .panel {
+    break-inside: avoid;
+  }
+}
+
+@media (max-width: 640px) {
+  .mg-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mg-filters {
+    padding: 12px 16px;
+  }
+
+  .mg-filters .select {
+    flex: 1;
+  }
+
+  .mg-routine,
+  .mg-report,
+  .mg-measure {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .mg-gen {
+    width: 100%;
+  }
+}
+
+.spin {
+  animation: mg-spin 0.9s linear infinite;
+}
+
+@keyframes mg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

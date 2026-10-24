@@ -1,0 +1,208 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Eye, Radio, Video, VideoOff, Wifi, WifiOff } from 'lucide-react'
+import { Badge, LiveBadge, Metric, Modal, Notice, PageHead, Panel, Bar } from '../../components/ui'
+import { faculties } from '../../data/mock'
+import type { Mode } from '../../data/types'
+import { useDemo } from '../../store/DemoStore'
+import { campusSessions, type CampusSession } from './liveData'
+import '../../styles/management.css'
+
+export default function LiveOps() {
+  const { toast } = useDemo()
+  const navigate = useNavigate()
+  const [rows, setRows] = useState<CampusSession[]>(campusSessions)
+  const [faculty, setFaculty] = useState('All faculties')
+  const [mode, setMode] = useState<'All modes' | Mode>('All modes')
+  const [observe, setObserve] = useState<CampusSession | null>(null)
+
+  // Simulate attendee counts moving as students join and leave.
+  useEffect(() => {
+    const t = setInterval(() => {
+      setRows((rs) =>
+        rs.map((r) => {
+          if (r.mode === 'In person') return r
+          const delta = Math.round((Math.random() - 0.45) * 4)
+          return { ...r, attendees: Math.max(1, Math.min(r.enrolled, r.attendees + delta)) }
+        }),
+      )
+    }, 3000)
+    return () => clearInterval(t)
+  }, [])
+
+  const filtered = useMemo(
+    () => rows.filter((r) => (faculty === 'All faculties' || r.faculty === faculty) && (mode === 'All modes' || r.mode === mode)),
+    [rows, faculty, mode],
+  )
+
+  const liveTotal = faculties.reduce((s, f) => s + f.liveNow, 0)
+  const joined = rows.reduce((s, r) => s + r.attendees, 0)
+  const degraded = rows.filter((r) => r.health === 'Degraded').length
+  const recordingCount = rows.filter((r) => r.recording).length
+
+  const toggleRecording = (id: string) => {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, recording: !r.recording } : r)))
+    const r = rows.find((x) => x.id === id)
+    if (r) toast(r.recording ? `Recording stopped for ${r.code}.` : `Recording started for ${r.code}.`, r.recording ? 'info' : 'ok')
+  }
+
+  return (
+    <>
+      <PageHead
+        title="Live operations"
+        sub="Every class running on the platform right now, with stream health and recording status."
+        actions={<LiveBadge label={`${liveTotal} live now`} />}
+      />
+
+      <div className="metrics">
+        <Metric label="Live sessions" value={liveTotal} foot={`Showing ${rows.length} monitored sessions below`} />
+        <Metric label="Participants in monitored sessions" value={<span className="mg-tick">{joined.toLocaleString()}</span>} foot="Updates every few seconds" />
+        <Metric label="Streams with issues" value={degraded} foot={degraded ? 'ICT support notified' : 'All streams healthy'} />
+        <Metric label="Being recorded" value={recordingCount} foot="Published with captions after class" />
+      </div>
+
+      <Panel
+        title="Sessions in progress"
+        sub="Sample data, Wednesday 21 October, 10:12"
+        bodyClass=""
+      >
+        <div className="mg-filters">
+          <select className="select sm" value={faculty} onChange={(e) => setFaculty(e.target.value)} aria-label="Filter by faculty">
+            <option>All faculties</option>
+            {faculties.map((f) => (
+              <option key={f.id}>{f.short}</option>
+            ))}
+          </select>
+          <select className="select sm" value={mode} onChange={(e) => setMode(e.target.value as Mode | 'All modes')} aria-label="Filter by mode">
+            <option>All modes</option>
+            <option>Hybrid</option>
+            <option>Online</option>
+            <option>In person</option>
+          </select>
+          <span className="small muted">{filtered.length} sessions</span>
+        </div>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Class</th>
+                <th>Faculty</th>
+                <th>Room</th>
+                <th>Mode</th>
+                <th className="num">Joined</th>
+                <th>Stream</th>
+                <th>Recording</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
+                <tr key={r.id}>
+                  <td style={{ minWidth: 220 }}>
+                    <strong style={{ display: 'block' }}>{r.code}</strong>
+                    <span className="small muted">{r.title}</span>
+                  </td>
+                  <td className="small">{r.faculty}</td>
+                  <td className="small">{r.room}</td>
+                  <td>
+                    <Badge tone={r.mode === 'Hybrid' ? 'blue' : r.mode === 'Online' ? 'teal' : ''}>{r.mode}</Badge>
+                  </td>
+                  <td className="num" style={{ minWidth: 110 }}>
+                    <strong>{r.attendees}</strong>
+                    <span className="xs muted"> of {r.enrolled}</span>
+                    <div className="mt-1">
+                      <Bar thin value={(r.attendees / r.enrolled) * 100} />
+                    </div>
+                  </td>
+                  <td>
+                    {r.mode === 'In person' ? (
+                      <span className="xs muted">No stream</span>
+                    ) : r.health === 'Good' ? (
+                      <Badge tone="green">
+                        <Wifi size={12} /> Good
+                      </Badge>
+                    ) : (
+                      <Badge tone="amber">
+                        <WifiOff size={12} /> Degraded
+                      </Badge>
+                    )}
+                  </td>
+                  <td>
+                    <button className={`btn xs ${r.recording ? 'danger' : 'secondary'}`} onClick={() => toggleRecording(r.id)}>
+                      {r.recording ? <Video size={13} /> : <VideoOff size={13} />}
+                      {r.recording ? 'Stop recording' : 'Start recording'}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      className="btn xs secondary"
+                      onClick={() => {
+                        if (r.link) navigate(r.link)
+                        else setObserve(r)
+                      }}
+                    >
+                      <Eye size={13} /> Observe
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      <div className="mt-2">
+        <Notice>Observing a class opens a view-only seat that students cannot see. In production this would respect university policy on classroom observation and recording consent.</Notice>
+      </div>
+
+      <Modal
+        open={!!observe}
+        onClose={() => setObserve(null)}
+        title="Observer view"
+        sub={observe ? `${observe.code} ${observe.title}` : ''}
+        foot={
+          <>
+            <button className="btn secondary" onClick={() => setObserve(null)}>
+              Close
+            </button>
+            <button
+              className="btn"
+              onClick={() => {
+                setObserve(null)
+                navigate('/lecturer/live/s-wia2004-14')
+              }}
+            >
+              <Radio size={16} /> Open the full live class demo
+            </button>
+          </>
+        }
+      >
+        {observe && (
+          <>
+            <dl className="kv">
+              <dt>Lecturer</dt>
+              <dd>{observe.lecturer}</dd>
+              <dt>Faculty</dt>
+              <dd>{observe.faculty}</dd>
+              <dt>Room</dt>
+              <dd>{observe.room}</dd>
+              <dt>Started</dt>
+              <dd>{observe.started}</dd>
+              <dt>Participants</dt>
+              <dd>
+                {observe.attendees} of {observe.enrolled} enrolled
+              </dd>
+              <dt>Stream</dt>
+              <dd>{observe.mode === 'In person' ? 'Not streamed' : observe.health}</dd>
+              <dt>Recording</dt>
+              <dd>{observe.recording ? 'On' : 'Off'}</dd>
+            </dl>
+            <div className="mt-2">
+              <Notice tone="blue">Only WIA2004 Lecture 14 has a full live classroom in this proof of concept. Other sessions show summary details.</Notice>
+            </div>
+          </>
+        )}
+      </Modal>
+    </>
+  )
+}
