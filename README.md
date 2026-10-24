@@ -49,14 +49,22 @@ npm run preview   # serve the built site locally
 
 ## Deploying
 
-The build is a static site in `dist/`. For Cloudflare Pages:
+### GitHub Pages (current)
 
-- Framework preset: Vite (or none)
+Deployment is automatic. `.github/workflows/deploy-pages.yml` builds the site and publishes it on every push to `main`.
+
+- One-time setup: repo **Settings > Pages > Build and deployment > Source: GitHub Actions**.
+- Site address: `https://<owner>.github.io/<repo-name>/`, for example `https://mett-infra.github.io/UM-Smart-Classroom-POC/`.
+- The workflow builds with `--base=/<repo-name>/` so all files load from the sub-folder, and copies `index.html` to `404.html` so deep links such as `/student/courses` work after a refresh.
+- Watch progress in the **Actions** tab. A green tick means the site is live.
+
+### Any other static host (Cloudflare Pages, Netlify)
+
 - Build command: `npm run build`
-- Build output directory: `dist`
+- Output directory: `dist`
 - Environment variable: `NODE_VERSION=22`
 
-The app uses normal URLs such as `/student/courses`. Cloudflare Pages serves `index.html` for unknown paths automatically when the project has no `404.html`, so deep links work without extra config. Follow the team deployment playbook for the final steps.
+These hosts serve `index.html` for unknown paths, so no extra config is needed.
 
 `public/robots.txt` and a `noindex` meta tag keep the demo out of search engines.
 

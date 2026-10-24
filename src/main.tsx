@@ -11,7 +11,8 @@ import './styles/pages.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* basename lets the app run from a sub-folder such as /UM-Smart-Classroom-POC/ on GitHub Pages */}
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <DemoProvider>
         <App />
       </DemoProvider>
