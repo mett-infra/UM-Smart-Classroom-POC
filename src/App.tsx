@@ -26,14 +26,13 @@ import TeachingAssistant from './pages/lecturer/TeachingAssistant'
 
 import MgmtOverview from './pages/management/MgmtOverview'
 import LiveOps from './pages/management/LiveOps'
-import Academics from './pages/management/Academics'
-import People from './pages/management/People'
 import Rooms from './pages/management/Rooms'
 import Maintenance from './pages/management/Maintenance'
 import Reports from './pages/management/Reports'
 import NetworkIncidents from './pages/management/NetworkIncidents'
 import CampusSetup from './pages/management/CampusSetup'
 import AuditLog from './pages/management/AuditLog'
+import Observe from './pages/management/Observe'
 
 export default function App() {
   return (
@@ -73,8 +72,7 @@ export default function App() {
         <Route path="/management" element={<Shell role="management" />}>
           <Route index element={<MgmtOverview />} />
           <Route path="live" element={<LiveOps />} />
-          <Route path="academics" element={<Academics />} />
-          <Route path="people" element={<People />} />
+          <Route path="live/:sessionId/observe" element={<Observe />} />
           <Route path="rooms" element={<Rooms />} />
           <Route path="maintenance" element={<Maintenance />} />
           <Route path="announcements" element={<Announcements role="management" />} />

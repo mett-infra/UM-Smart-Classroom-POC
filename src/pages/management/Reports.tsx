@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { BarChart3, CalendarClock, CheckCircle2, Download, FileText, Loader2, ShieldCheck, Users, Video, Building2, Accessibility, Timer, GraduationCap } from 'lucide-react'
-import { Badge, Bar, Notice, PageHead, Panel, Switch } from '../../components/ui'
+import { BarChart3, CalendarClock, CheckCircle2, Download, FileText, Loader2, ShieldCheck, Users, Video, Building2 } from 'lucide-react'
+import { Bar, Notice, PageHead, Panel, Switch } from '../../components/ui'
 import { faculties, rooms, weeklyTrend } from '../../data/mock'
 import { useDemo } from '../../store/DemoStore'
 import { campusSessions } from './liveData'
@@ -61,12 +61,6 @@ const reports: ReportDef[] = [
   },
 ]
 
-const measures = [
-  { title: 'Classroom uptime', desc: 'Share of scheduled teaching time when room equipment works.', baseline: 95, icon: <Building2 size={16} />, tag: 'Operational' },
-  { title: 'Lecturer adoption', desc: 'Lecturers using live classes, recordings or the gradebook each week, and training completed.', baseline: 68, icon: <GraduationCap size={16} />, tag: 'Adoption' },
-  { title: 'Support resolution time', desc: 'Classroom incidents resolved within the agreed service level.', baseline: 92, icon: <Timer size={16} />, tag: 'Service' },
-  { title: 'Learning accessibility', desc: 'Recordings published with captions and available to students within 24 hours.', baseline: 81, icon: <Accessibility size={16} />, tag: 'Learning' },
-]
 
 export default function Reports() {
   const { toast } = useDemo()
@@ -167,26 +161,6 @@ export default function Reports() {
         </div>
       </div>
 
-      <Panel title="Proposed success measures" sub="Baselines and targets to agree with the university during discovery" className="mt-3" bodyClass="">
-        {measures.map((m) => (
-          <div className="mg-measure" key={m.title}>
-            <div className="icon-tile sm">{m.icon}</div>
-            <div className="grow">
-              <div className="row wrap" style={{ gap: 8 }}>
-                <span className="strong">{m.title}</span>
-                <Badge tone="blue">{m.tag}</Badge>
-              </div>
-              <div className="small muted">{m.desc}</div>
-              <div className="row mt-1" style={{ maxWidth: 420 }}>
-                <div className="grow">
-                  <Bar thin value={m.baseline} />
-                </div>
-                <span className="xs muted num">Sample baseline {m.baseline}%</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </Panel>
     </>
   )
 }

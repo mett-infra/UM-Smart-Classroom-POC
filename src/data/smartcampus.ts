@@ -1,11 +1,13 @@
 /*
-  Smart campus sample data (Day 1: campus setup, device registry, network incidents, audit).
+  Smart campus sample data: campus setup (master rooms and sub rooms), device registry and pairing,
+  automatically detected network incidents, and the audit log.
   Everything here is fictional sample data for the proof of concept. In production these records
-  come from the university's timetable, student information system, network telemetry and IoT gateway.
+  come from the university's timetable, network and security systems, and the IoT gateway.
 */
 
 // ---------------- Campus hierarchy ----------------
-export type SpaceType = 'Lecture hall' | 'Auditorium' | 'Smart room' | 'Seminar room' | 'Lab'
+export type SpaceType = 'Master room' | 'Lecture hall' | 'Auditorium' | 'Smart room' | 'Seminar room' | 'Lab' | 'Control room'
+export type SubType = Exclude<SpaceType, 'Master room'>
 export type SpaceState = 'Operational' | 'Setup incomplete' | 'Under maintenance' | 'Deactivated'
 
 export interface Building {
@@ -17,6 +19,8 @@ export interface Building {
 
 export interface Space {
   id: string
+  kind: 'master' | 'sub'
+  parentId: string | null
   code: string
   name: string
   buildingId: string
@@ -41,21 +45,36 @@ export const buildings: Building[] = [
   { id: 'b-ca', name: 'Central Auditorium', short: 'Auditorium', floors: ['Ground floor'] },
 ]
 
+const master = (id: string, code: string, name: string, buildingId: string, floor: string): Space => ({
+  id, kind: 'master', parentId: null, code, name, buildingId, floor, type: 'Master room', capacity: 0, state: 'Operational', occupancySource: null, camera: null, doorId: null, timetable: true, voice: false,
+})
+const sub = (s: Omit<Space, 'kind'>): Space => ({ kind: 'sub', ...s })
+
 export const seedSpaces: Space[] = [
-  { id: 'sp-dk1', code: 'FSKTM-DK1', name: 'DK1', buildingId: 'b-fsktm', floor: 'Ground floor', type: 'Lecture hall', capacity: 180, state: 'Operational', occupancySource: 'People counter PC-FS-01', camera: 'PTZ-FS-DK1', doorId: 'DR-FS-DK1', timetable: true, voice: true },
-  { id: 'sp-dk2', code: 'FSKTM-DK2', name: 'DK2', buildingId: 'b-fsktm', floor: 'Ground floor', type: 'Lecture hall', capacity: 160, state: 'Operational', occupancySource: 'People counter PC-FS-02', camera: 'PTZ-FS-DK2', doorId: 'DR-FS-DK2', timetable: true, voice: true },
-  { id: 'sp-mk1', code: 'FSKTM-MK1', name: 'Makmal 1', buildingId: 'b-fsktm', floor: 'Ground floor', type: 'Lab', capacity: 60, state: 'Under maintenance', occupancySource: 'Motion sensor MS-FS-11', camera: null, doorId: 'DR-FS-MK1', timetable: true, voice: false },
-  { id: 'sp-dk3', code: 'FSKTM-DK3', name: 'DK3', buildingId: 'b-fsktm', floor: 'Level 1', type: 'Lecture hall', capacity: 140, state: 'Operational', occupancySource: 'People counter PC-FS-03', camera: 'PTZ-FS-DK3', doorId: 'DR-FS-DK3', timetable: true, voice: true },
-  { id: 'sp-mk3', code: 'FSKTM-MK3', name: 'Makmal 3', buildingId: 'b-fsktm', floor: 'Level 1', type: 'Lab', capacity: 60, state: 'Operational', occupancySource: 'Motion sensor MS-FS-13', camera: null, doorId: 'DR-FS-MK3', timetable: true, voice: false },
-  { id: 'sp-bk2', code: 'FSKTM-BK2', name: 'BK2', buildingId: 'b-fsktm', floor: 'Level 2', type: 'Seminar room', capacity: 40, state: 'Setup incomplete', occupancySource: null, camera: null, doorId: 'DR-FS-BK2', timetable: true, voice: false },
-  { id: 'sp-ea1', code: 'ENG-EA-101', name: 'Lecture Hall EA-1', buildingId: 'b-enga', floor: 'Level 1', type: 'Lecture hall', capacity: 240, state: 'Operational', occupancySource: 'People counter PC-EA-01', camera: 'PTZ-EA-101', doorId: 'DR-EA-101', timetable: true, voice: true },
-  { id: 'sp-c12', code: 'ENG-EA-112', name: 'Seminar Room C-12', buildingId: 'b-enga', floor: 'Level 1', type: 'Seminar room', capacity: 40, state: 'Operational', occupancySource: 'Motion sensor MS-EA-12', camera: 'PTZ-EA-112', doorId: 'DR-EA-112', timetable: true, voice: true },
-  { id: 'sp-ea201', code: 'ENG-EA-201', name: 'Smart Room EA-201', buildingId: 'b-enga', floor: 'Level 2', type: 'Smart room', capacity: 48, state: 'Operational', occupancySource: 'People counter PC-EA-21', camera: 'PTZ-EA-201', doorId: 'DR-EA-201', timetable: true, voice: true },
-  { id: 'sp-ea210', code: 'ENG-EA-210', name: 'Electronics Lab EA-210', buildingId: 'b-enga', floor: 'Level 2', type: 'Lab', capacity: 36, state: 'Operational', occupancySource: 'Motion sensor MS-EA-30', camera: null, doorId: 'DR-EA-210', timetable: true, voice: false },
-  { id: 'sp-eaud', code: 'ENG-EB-001', name: 'Engineering Auditorium', buildingId: 'b-engb', floor: 'Ground floor', type: 'Auditorium', capacity: 420, state: 'Operational', occupancySource: 'People counter PC-EB-01', camera: 'PTZ-EB-001', doorId: 'DR-EB-001', timetable: true, voice: true },
-  { id: 'sp-eb110', code: 'ENG-EB-110', name: 'Lecture Hall EB-110', buildingId: 'b-engb', floor: 'Level 1', type: 'Lecture hall', capacity: 200, state: 'Operational', occupancySource: 'People counter PC-EB-11', camera: 'PTZ-EB-110', doorId: 'DR-EB-110', timetable: true, voice: true },
-  { id: 'sp-b204', code: 'FBE-B-204', name: 'Smart Room B-204', buildingId: 'b-fbe', floor: 'Level 2', type: 'Smart room', capacity: 48, state: 'Operational', occupancySource: 'People counter PC-FB-04', camera: 'PTZ-FB-204', doorId: 'DR-FB-204', timetable: true, voice: true },
-  { id: 'sp-ca', code: 'CA-MAIN', name: 'Central Auditorium', buildingId: 'b-ca', floor: 'Ground floor', type: 'Auditorium', capacity: 1200, state: 'Operational', occupancySource: 'People counter PC-CA-01 to 04', camera: 'PTZ-CA-01', doorId: 'DR-CA-MAIN', timetable: false, voice: true },
+  master('m-fs-dk', 'FSKTM-DK', 'Lecture Complex DK', 'b-fsktm', 'Ground floor'),
+  master('m-fs-lab', 'FSKTM-LAB', 'Computer Labs', 'b-fsktm', 'Ground floor'),
+  master('m-fs-bk', 'FSKTM-BK', 'Tutorial Rooms', 'b-fsktm', 'Level 2'),
+  master('m-ea', 'ENG-A-TS', 'Teaching Suite A', 'b-enga', 'Level 1'),
+  master('m-ea-lab', 'ENG-A-LAB', 'Engineering Labs A', 'b-enga', 'Level 2'),
+  master('m-eb', 'ENG-B-TS', 'Teaching Suite B', 'b-engb', 'Ground floor'),
+  master('m-fbe', 'FBE-SR', 'Smart Rooms FBE', 'b-fbe', 'Level 2'),
+  master('m-ca', 'CA', 'Central Auditorium', 'b-ca', 'Ground floor'),
+
+  sub({ id: 'sp-dk1', parentId: 'm-fs-dk', code: 'FSKTM-DK1', name: 'DK1', buildingId: 'b-fsktm', floor: 'Ground floor', type: 'Lecture hall', capacity: 180, state: 'Operational', occupancySource: 'People counter PC-FS-01', camera: 'PTZ-FS-DK1', doorId: 'DR-FS-DK1', timetable: true, voice: true }),
+  sub({ id: 'sp-dk2', parentId: 'm-fs-dk', code: 'FSKTM-DK2', name: 'DK2', buildingId: 'b-fsktm', floor: 'Ground floor', type: 'Lecture hall', capacity: 160, state: 'Operational', occupancySource: 'People counter PC-FS-02', camera: 'PTZ-FS-DK2', doorId: 'DR-FS-DK2', timetable: true, voice: true }),
+  sub({ id: 'sp-dk3', parentId: 'm-fs-dk', code: 'FSKTM-DK3', name: 'DK3', buildingId: 'b-fsktm', floor: 'Level 1', type: 'Lecture hall', capacity: 140, state: 'Operational', occupancySource: 'People counter PC-FS-03', camera: 'PTZ-FS-DK3', doorId: 'DR-FS-DK3', timetable: true, voice: true }),
+  sub({ id: 'sp-mk1', parentId: 'm-fs-lab', code: 'FSKTM-MK1', name: 'Makmal 1', buildingId: 'b-fsktm', floor: 'Ground floor', type: 'Lab', capacity: 60, state: 'Under maintenance', occupancySource: 'Motion sensor MS-FS-11', camera: null, doorId: 'DR-FS-MK1', timetable: true, voice: false }),
+  sub({ id: 'sp-mk3', parentId: 'm-fs-lab', code: 'FSKTM-MK3', name: 'Makmal 3', buildingId: 'b-fsktm', floor: 'Level 1', type: 'Lab', capacity: 60, state: 'Operational', occupancySource: 'Motion sensor MS-FS-13', camera: null, doorId: 'DR-FS-MK3', timetable: true, voice: false }),
+  sub({ id: 'sp-bk2', parentId: 'm-fs-bk', code: 'FSKTM-BK2', name: 'BK2', buildingId: 'b-fsktm', floor: 'Level 2', type: 'Seminar room', capacity: 40, state: 'Setup incomplete', occupancySource: null, camera: null, doorId: 'DR-FS-BK2', timetable: true, voice: false }),
+  sub({ id: 'sp-ea1', parentId: 'm-ea', code: 'ENG-EA-101', name: 'Lecture Hall EA-1', buildingId: 'b-enga', floor: 'Level 1', type: 'Lecture hall', capacity: 240, state: 'Operational', occupancySource: 'People counter PC-EA-01', camera: 'PTZ-EA-101', doorId: 'DR-EA-101', timetable: true, voice: true }),
+  sub({ id: 'sp-c12', parentId: 'm-ea', code: 'ENG-EA-112', name: 'Seminar Room C-12', buildingId: 'b-enga', floor: 'Level 1', type: 'Seminar room', capacity: 40, state: 'Operational', occupancySource: 'Motion sensor MS-EA-12', camera: 'PTZ-EA-112', doorId: 'DR-EA-112', timetable: true, voice: true }),
+  sub({ id: 'sp-ea201', parentId: 'm-ea', code: 'ENG-EA-201', name: 'Smart Room EA-201', buildingId: 'b-enga', floor: 'Level 2', type: 'Smart room', capacity: 48, state: 'Operational', occupancySource: 'People counter PC-EA-21', camera: 'PTZ-EA-201', doorId: 'DR-EA-201', timetable: true, voice: true }),
+  sub({ id: 'sp-ea210', parentId: 'm-ea-lab', code: 'ENG-EA-210', name: 'Electronics Lab EA-210', buildingId: 'b-enga', floor: 'Level 2', type: 'Lab', capacity: 36, state: 'Operational', occupancySource: 'Motion sensor MS-EA-30', camera: null, doorId: 'DR-EA-210', timetable: true, voice: false }),
+  sub({ id: 'sp-eaud', parentId: 'm-eb', code: 'ENG-EB-001', name: 'Engineering Auditorium', buildingId: 'b-engb', floor: 'Ground floor', type: 'Auditorium', capacity: 420, state: 'Operational', occupancySource: 'People counter PC-EB-01', camera: 'PTZ-EB-001', doorId: 'DR-EB-001', timetable: true, voice: true }),
+  sub({ id: 'sp-eb110', parentId: 'm-eb', code: 'ENG-EB-110', name: 'Lecture Hall EB-110', buildingId: 'b-engb', floor: 'Level 1', type: 'Lecture hall', capacity: 200, state: 'Operational', occupancySource: 'People counter PC-EB-11', camera: 'PTZ-EB-110', doorId: 'DR-EB-110', timetable: true, voice: true }),
+  sub({ id: 'sp-b204', parentId: 'm-fbe', code: 'FBE-B-204', name: 'Smart Room B-204', buildingId: 'b-fbe', floor: 'Level 2', type: 'Smart room', capacity: 48, state: 'Operational', occupancySource: 'People counter PC-FB-04', camera: 'PTZ-FB-204', doorId: 'DR-FB-204', timetable: true, voice: true }),
+  sub({ id: 'sp-ca', parentId: 'm-ca', code: 'CA-MAIN', name: 'Main hall', buildingId: 'b-ca', floor: 'Ground floor', type: 'Auditorium', capacity: 1200, state: 'Operational', occupancySource: 'People counter PC-CA-01 to 04', camera: 'PTZ-CA-01', doorId: 'DR-CA-MAIN', timetable: false, voice: true }),
+  sub({ id: 'sp-ca-av', parentId: 'm-ca', code: 'CA-AV', name: 'AV control room', buildingId: 'b-ca', floor: 'Ground floor', type: 'Control room', capacity: 6, state: 'Setup incomplete', occupancySource: null, camera: null, doorId: 'DR-CA-AV', timetable: false, voice: false }),
 ]
 
 // ---------------- Device registry ----------------
@@ -64,9 +83,12 @@ export type DeviceStatus = 'Online' | 'Offline' | 'Stale'
 
 export interface Device {
   id: string
+  name: string
   type: DeviceType
   spaceId: string
   model: string
+  network: string
+  pairing?: string
   status: DeviceStatus
   capabilities: string[]
   lastSeen: string
@@ -74,8 +96,10 @@ export interface Device {
   autoOffEligible: boolean
 }
 
+export const IOT_NETWORK = 'UM-IoT (VLAN 120)'
+
 const modelOf: Record<DeviceType, string> = {
-  'Interactive display': '86-inch interactive display, generic',
+  'Interactive display': '86-inch interactive display',
   Projector: 'Laser projector 6000 lm',
   Lights: 'DALI lighting zone',
   Fan: 'Ceiling fan relay',
@@ -87,7 +111,7 @@ const modelOf: Record<DeviceType, string> = {
   'Ceiling microphone': 'Beamforming ceiling mic',
   'Room controller': 'IoT room controller gateway',
 }
-const capsOf: Record<DeviceType, string[]> = {
+export const capsOf: Record<DeviceType, string[]> = {
   'Interactive display': ['On / off', 'Input select'],
   Projector: ['On / off'],
   Lights: ['On / off', 'Dim 0-100%'],
@@ -100,9 +124,26 @@ const capsOf: Record<DeviceType, string[]> = {
   'Ceiling microphone': ['Mute', 'Gain'],
   'Room controller': ['Scenes', 'Voice commands'],
 }
-const eligible: DeviceType[] = ['Interactive display', 'Projector', 'Lights', 'Fan', 'Air-conditioning']
+export const AUTO_OFF_TYPES: DeviceType[] = ['Interactive display', 'Projector', 'Lights', 'Fan', 'Air-conditioning']
+export const shortType = (t: DeviceType) => t.split(' ').map((w) => w[0]).join('').toUpperCase()
+
+const friendly: Record<DeviceType, string> = {
+  'Interactive display': 'front display',
+  Projector: 'projector',
+  Lights: 'lights',
+  Fan: 'fans',
+  'Air-conditioning': 'air-conditioning',
+  'PTZ camera': 'tracking camera',
+  'People counter': 'people counter',
+  'Motion sensor': 'motion sensor',
+  'Door controller': 'door',
+  'Ceiling microphone': 'ceiling mic',
+  'Room controller': 'room controller',
+}
+export const defaultDeviceName = (roomName: string, t: DeviceType) => `${roomName} ${friendly[t]}`
 
 function devicesFor(sp: Space, i: number): Device[] {
+  if (sp.kind === 'master' || sp.id === 'sp-ca-av' || sp.id === 'sp-bk2') return []
   const types: DeviceType[] = ['Room controller', 'Lights', 'Air-conditioning']
   if (sp.type !== 'Lab') types.push('Interactive display')
   if (sp.type === 'Lecture hall' || sp.type === 'Auditorium') types.push('Projector', 'Ceiling microphone')
@@ -115,45 +156,76 @@ function devicesFor(sp: Space, i: number): Device[] {
     const offline = (sp.id === 'sp-c12' && t === 'Ceiling microphone') || (sp.id === 'sp-mk1' && t !== 'Door controller')
     const stale = sp.id === 'sp-b204' && t === 'Room controller'
     return {
-      id: `${sp.code}-${t.split(' ').map((w) => w[0]).join('').toUpperCase()}${k}`,
+      id: `${sp.code}-${shortType(t)}${k}`,
+      name: defaultDeviceName(sp.name, t),
       type: t,
       spaceId: sp.id,
       model: modelOf[t],
+      network: IOT_NETWORK,
       status: offline ? 'Offline' : stale ? 'Stale' : 'Online',
       capabilities: capsOf[t],
-      lastSeen: offline ? '3 h ago' : stale ? '18 min ago' : `${(i * 7 + k * 5) % 50 + 5} s ago`,
+      lastSeen: offline ? '3 h ago' : stale ? '18 min ago' : `${((i * 7 + k * 5) % 50) + 5} s ago`,
       maintenance: k % 4 === 0 ? 'Service due Dec 2026' : 'No action needed',
-      autoOffEligible: eligible.includes(t),
+      autoOffEligible: AUTO_OFF_TYPES.includes(t),
     }
   })
 }
 
 export const seedDevices: Device[] = seedSpaces.flatMap(devicesFor)
+export const modelFor = (t: DeviceType) => modelOf[t]
 
-// ---------------- Network telemetry, policies and incidents ----------------
+// Devices found on the network that are waiting to be paired (used by the pairing wizard).
+export interface Discovered {
+  key: string
+  type: DeviceType
+  label: string
+  network: string
+  ip: string
+  pairing: string
+}
+
+export function discoveredFor(sp: Space): Discovered[] {
+  const seed = sp.code.split('').reduce((n, c) => n + c.charCodeAt(0), 0)
+  const hex = (n: number) => ((seed * 97 + n * 4099) % 65535).toString(16).toUpperCase().padStart(4, '0')
+  const code = (n: number) => String(((seed * 7919 + n * 104729) % 900000) + 100000)
+  return [
+    { key: 'd1', type: 'Interactive display', label: `Display-${hex(1)}`, network: IOT_NETWORK, ip: `10.20.120.${(seed % 90) + 40}`, pairing: code(1) },
+    { key: 'd2', type: 'Lights', label: `DALI-Gateway-${hex(2)}`, network: IOT_NETWORK, ip: `10.20.120.${(seed % 90) + 41}`, pairing: code(2) },
+    { key: 'd3', type: 'Air-conditioning', label: `AC-Bridge-${hex(3)}`, network: IOT_NETWORK, ip: `10.20.120.${(seed % 90) + 42}`, pairing: code(3) },
+    { key: 'd4', type: 'PTZ camera', label: `PTZ-Cam-${hex(4)}`, network: 'UM-Guest (Wi-Fi)', ip: `172.16.8.${(seed % 90) + 10}`, pairing: code(4) },
+  ]
+}
+
+// ---------------- Network incidents (detected automatically) ----------------
 export type IncidentStatus = 'New' | 'Acknowledged' | 'Investigating' | 'On hold' | 'Resolved' | 'False positive'
 export type Severity = 'High' | 'Medium' | 'Low'
+export type DetectionSource = 'Wireless intrusion detection' | 'Firewall (IPS)' | 'DNS security' | 'Network access control' | 'Wi-Fi sign-in (identity)' | 'Wi-Fi controller' | 'Endpoint agent'
+
+export const detectionSources: DetectionSource[] = ['Wireless intrusion detection', 'Firewall (IPS)', 'DNS security', 'Network access control', 'Wi-Fi sign-in (identity)', 'Wi-Fi controller', 'Endpoint agent']
 
 export interface NetPolicy {
   id: string
   name: string
   category: string
-  examples: string
+  detects: string
+  source: DetectionSource
   scope: string
   schedule: string
   severity: Severity
-  response: 'Log only' | 'Notify IT security' | 'Notify and request block'
+  response: string
   active: boolean
   hitsToday: number
 }
 
 export const seedPolicies: NetPolicy[] = [
-  { id: 'pol-1', name: 'Video streaming during teaching hours', category: 'Video streaming', examples: 'netflix.com, primevideo.com, iq.com', scope: 'Faculty of Engineering, managed devices', schedule: 'Mon to Fri, 08:00 to 18:00', severity: 'Medium', response: 'Notify IT security', active: true, hitsToday: 6 },
-  { id: 'pol-2', name: 'Online gaming', category: 'Online gaming', examples: 'store.steampowered.com, epicgames.com, Valorant client', scope: 'Faculty of Engineering, managed devices', schedule: 'Always', severity: 'Medium', response: 'Notify IT security', active: true, hitsToday: 3 },
-  { id: 'pol-3', name: 'Peer-to-peer file sharing', category: 'Torrent / P2P', examples: 'BitTorrent and uTorrent clients, tracker domains', scope: 'All faculties, managed devices', schedule: 'Always', severity: 'High', response: 'Notify and request block', active: true, hitsToday: 1 },
-  { id: 'pol-4', name: 'VPN or proxy to bypass campus filtering', category: 'VPN / proxy bypass', examples: 'Unapproved VPN apps, open proxies', scope: 'All faculties, managed devices', schedule: 'Always', severity: 'High', response: 'Notify and request block', active: true, hitsToday: 2 },
-  { id: 'pol-5', name: 'Unapproved AI tools during assessments', category: 'Generative AI', examples: 'Public chatbots not approved for the course', scope: 'Exam and lab rooms in Engineering', schedule: 'During scheduled assessments only', severity: 'High', response: 'Notify IT security', active: true, hitsToday: 0 },
-  { id: 'pol-6', name: 'Social media in exam rooms', category: 'Social media', examples: 'tiktok.com, instagram.com', scope: 'Exam rooms', schedule: 'During scheduled exams only', severity: 'Low', response: 'Log only', active: false, hitsToday: 0 },
+  { id: 'pol-rogue', name: 'Rogue or look-alike access points', category: 'Rogue access point', detects: 'Access points not owned by the university, or names copying UM-WiFi', source: 'Wireless intrusion detection', scope: 'All campus Wi-Fi', schedule: 'Always', severity: 'High', response: 'Record, alert security, locate access point', active: true, hitsToday: 1 },
+  { id: 'pol-brute', name: 'Repeated failed Wi-Fi sign-ins', category: 'Credential attack', detects: '10 or more failed sign-ins on one account within 5 minutes', source: 'Wi-Fi sign-in (identity)', scope: 'UM-WiFi and eduroam', schedule: 'Always', severity: 'High', response: 'Record, alert security, request account lock', active: true, hitsToday: 2 },
+  { id: 'pol-malware', name: 'Malware and command-and-control traffic', category: 'Malware', detects: 'Connections to known malicious or command-and-control domains', source: 'DNS security', scope: 'All campus networks', schedule: 'Always', severity: 'High', response: 'Record, block domain, request device isolation', active: true, hitsToday: 1 },
+  { id: 'pol-unreg', name: 'Unregistered devices on campus networks', category: 'Unauthorised device', detects: 'Devices whose hardware address is not in the asset register', source: 'Network access control', scope: 'Lab LAN and UM-IoT', schedule: 'Always', severity: 'Medium', response: 'Record, move device to guest network', active: true, hitsToday: 3 },
+  { id: 'pol-scan', name: 'Port scanning and spoofing', category: 'Network attack', detects: 'Port scans, ARP spoofing and lateral movement between devices', source: 'Firewall (IPS)', scope: 'All campus networks', schedule: 'Always', severity: 'High', response: 'Record, alert security', active: true, hitsToday: 1 },
+  { id: 'pol-exfil', name: 'Unusual data transfers', category: 'Data exfiltration', detects: 'Uploads above 10 GB to unknown services, DNS tunnelling', source: 'Firewall (IPS)', scope: 'Managed devices', schedule: 'Always', severity: 'Medium', response: 'Record, alert security', active: true, hitsToday: 0 },
+  { id: 'pol-policy', name: 'Restricted apps and bypass tools', category: 'Policy breach', detects: 'Peer-to-peer file sharing, VPNs or proxies that bypass campus filtering', source: 'Firewall (IPS)', scope: 'Managed devices, Faculty of Engineering first', schedule: 'Mon to Fri, 08:00 to 18:00', severity: 'Medium', response: 'Record, notify IT', active: true, hitsToday: 2 },
+  { id: 'pol-drift', name: 'Network inconsistencies', category: 'Network inconsistency', detects: 'Access point settings that differ from the standard, address pools running out, access points offline', source: 'Wi-Fi controller', scope: 'All campus Wi-Fi', schedule: 'Always', severity: 'Low', response: 'Record, notify network operations', active: true, hitsToday: 2 },
 ]
 
 export interface NetUser {
@@ -169,8 +241,6 @@ export const engStudents: NetUser[] = [
   { name: 'Kavya a/p Rajendran', matric: '23005266', programme: 'Chemical Engineering, Year 2' },
   { name: 'Lee Jun Hao', matric: '21003390', programme: 'Biomedical Engineering, Year 4' },
   { name: 'Nur Syafiqah binti Azlan', matric: '23005419', programme: 'Electrical Engineering, Year 2' },
-  { name: 'Darren Ong Kah Meng', matric: '22004960', programme: 'Mechanical Engineering, Year 3' },
-  { name: 'Aiman Hakimi bin Zulkarnain', matric: '24006013', programme: 'Civil Engineering, Year 1' },
 ]
 
 export interface IncidentNote {
@@ -185,15 +255,15 @@ export interface Incident {
   detected: string
   policyId: string
   category: string
-  destination: string
+  title: string
+  evidence: string
   device: string
-  deviceKind: 'University laptop' | 'Lab PC' | 'Library kiosk'
-  network: 'UM-WiFi (campus)' | 'eduroam (campus)' | 'Lab LAN (campus)' | 'Off-campus Wi-Fi (endpoint agent)'
-  source: 'Campus firewall' | 'DNS filter' | 'Endpoint agent'
+  deviceKind: string
+  network: string
+  source: DetectionSource
   location: string
   faculty: string
-  user: NetUser
-  volume: string
+  user: NetUser | null
   severity: Severity
   status: IncidentStatus
   owner: string
@@ -202,49 +272,51 @@ export interface Incident {
 
 export const itStaff = ['Azlan (IT security)', 'Mei Fong (IT security)', 'Kumar (Network ops)', 'Unassigned']
 
+const opened = (time: string, source: string): IncidentNote => ({ time, by: 'System', text: `Detected automatically by ${source.toLowerCase()} and recorded.`, status: 'New' })
+
 export const seedIncidents: Incident[] = [
   {
-    id: 'NET-2026-0141', detected: '09:52', policyId: 'pol-4', category: 'VPN / proxy bypass', destination: 'Unapproved VPN client', device: 'UM-ENG-LT-0412', deviceKind: 'University laptop',
-    network: 'UM-WiFi (campus)', source: 'Campus firewall', location: 'Engineering Block A, Level 2, access point AP-EA2-07', faculty: 'Faculty of Engineering', user: engStudents[0], volume: '86 MB', severity: 'High', status: 'Investigating', owner: 'Azlan (IT security)',
-    notes: [
-      { time: '09:52', by: 'System', text: 'Incident opened from campus firewall event. Policy: VPN or proxy to bypass campus filtering.', status: 'New' },
-      { time: '09:58', by: 'Azlan (IT security)', text: 'Acknowledged. Checking whether the VPN is required for an approved research project.', status: 'Acknowledged' },
-      { time: '10:05', by: 'Azlan (IT security)', text: 'Contacted the department lab coordinator.', status: 'Investigating' },
-    ],
+    id: 'NET-2026-0141', detected: '09:52', policyId: 'pol-rogue', category: 'Rogue access point', title: 'Look-alike Wi-Fi network "UM-WiFi-Free" broadcasting',
+    evidence: 'Unknown access point with hardware address 3C:84:6A:2F:91:0B, signal strongest near DK3. 14 devices tried to connect.', device: 'Unknown access point', deviceKind: 'Access point (not university-owned)',
+    network: 'Campus Wi-Fi airspace', source: 'Wireless intrusion detection', location: 'FSKTM, Level 1, near DK3', faculty: 'Computer Science & IT', user: null, severity: 'High', status: 'Investigating', owner: 'Azlan (IT security)',
+    notes: [opened('09:52', 'Wireless intrusion detection'), { time: '09:58', by: 'Azlan (IT security)', text: 'Acknowledged. Security guard sent to Level 1 to locate the device.', status: 'Acknowledged' }, { time: '10:05', by: 'Azlan (IT security)', text: 'Signal traced to a corridor socket. Checking with facilities.', status: 'Investigating' }],
   },
   {
-    id: 'NET-2026-0140', detected: '09:31', policyId: 'pol-1', category: 'Video streaming', destination: 'netflix.com', device: 'ENG-EA210-PC14', deviceKind: 'Lab PC',
-    network: 'Lab LAN (campus)', source: 'DNS filter', location: 'Electronics Lab EA-210', faculty: 'Faculty of Engineering', user: engStudents[1], volume: '1.2 GB', severity: 'Medium', status: 'On hold', owner: 'Mei Fong (IT security)',
-    notes: [
-      { time: '09:31', by: 'System', text: 'Incident opened from DNS filter event during a scheduled lab.', status: 'New' },
-      { time: '09:40', by: 'Mei Fong (IT security)', text: 'Paused until the lab session ends at 11:00 so the lecturer can confirm.', status: 'On hold' },
-    ],
+    id: 'NET-2026-0140', detected: '09:31', policyId: 'pol-brute', category: 'Credential attack', title: '46 failed Wi-Fi sign-ins on one student account in 5 minutes',
+    evidence: 'Failed sign-ins on account 22004531 from 3 different devices. Account locked automatically after 20 failures.', device: '3 devices (2 unknown)', deviceKind: 'Mixed',
+    network: 'UM-WiFi', source: 'Wi-Fi sign-in (identity)', location: 'Engineering Block A, Level 2', faculty: 'Engineering', user: engStudents[0], severity: 'High', status: 'Acknowledged', owner: 'Mei Fong (IT security)',
+    notes: [opened('09:31', 'Wi-Fi sign-in service'), { time: '09:36', by: 'Mei Fong (IT security)', text: 'Acknowledged. Contacting the student to reset the password.', status: 'Acknowledged' }],
   },
   {
-    id: 'NET-2026-0138', detected: '08:47', policyId: 'pol-2', category: 'Online gaming', destination: 'store.steampowered.com', device: 'UM-ENG-LT-0388', deviceKind: 'University laptop',
-    network: 'Off-campus Wi-Fi (endpoint agent)', source: 'Endpoint agent', location: 'Off campus (home network)', faculty: 'Faculty of Engineering', user: engStudents[2], volume: '3.4 GB', severity: 'Medium', status: 'Resolved', owner: 'Kumar (Network ops)',
-    notes: [
-      { time: '08:47', by: 'System', text: 'Incident opened from endpoint agent report on a university-issued laptop.', status: 'New' },
-      { time: '09:10', by: 'Kumar (Network ops)', text: 'Reminder of acceptable-use policy sent to the student. No further action.', status: 'Resolved' },
-    ],
+    id: 'NET-2026-0139', detected: '08:47', policyId: 'pol-malware', category: 'Malware', title: 'Laptop contacted a known command-and-control domain',
+    evidence: 'DNS request for a domain on the threat feed was blocked. Same device made 12 similar requests in an hour.', device: 'UM-ENG-LT-0412', deviceKind: 'University laptop',
+    network: 'eduroam', source: 'DNS security', location: 'Engineering Block B, Ground floor', faculty: 'Engineering', user: engStudents[2], severity: 'High', status: 'On hold', owner: 'Kumar (Network ops)',
+    notes: [opened('08:47', 'DNS security'), { time: '09:02', by: 'Kumar (Network ops)', text: 'Device isolated from the network. Waiting for the student to bring it to the ICT counter for cleaning.', status: 'On hold' }],
   },
   {
-    id: 'NET-2026-0135', detected: 'Yesterday 16:20', policyId: 'pol-3', category: 'Torrent / P2P', destination: 'BitTorrent client', device: 'UM-ENG-LT-0251', deviceKind: 'University laptop',
-    network: 'eduroam (campus)', source: 'Campus firewall', location: 'Engineering Block B, Ground floor, AP-EB0-02', faculty: 'Faculty of Engineering', user: engStudents[4], volume: '6.8 GB', severity: 'High', status: 'False positive', owner: 'Azlan (IT security)',
-    notes: [
-      { time: '16:20', by: 'System', text: 'Incident opened from campus firewall event.', status: 'New' },
-      { time: '16:55', by: 'Azlan (IT security)', text: 'Traffic was an approved Linux ISO mirror for a course lab. Exception proposed for the mirror domain.', status: 'False positive' },
-    ],
+    id: 'NET-2026-0138', detected: '08:15', policyId: 'pol-unreg', category: 'Unauthorised device', title: 'Unregistered device joined the lab network',
+    evidence: 'Hardware address not in the asset register. Device moved to the guest network automatically.', device: 'Unregistered laptop', deviceKind: 'Unknown device',
+    network: 'Lab LAN', source: 'Network access control', location: 'Electronics Lab EA-210', faculty: 'Engineering', user: null, severity: 'Medium', status: 'Resolved', owner: 'Kumar (Network ops)',
+    notes: [opened('08:15', 'Network access control'), { time: '08:40', by: 'Kumar (Network ops)', text: 'Visiting contractor laptop. Given temporary guest access for the day.', status: 'Resolved' }],
+  },
+  {
+    id: 'NET-2026-0135', detected: 'Yesterday 16:20', policyId: 'pol-scan', category: 'Network attack', title: 'Port scan across the lab subnet',
+    evidence: 'Lab PC probed 254 addresses on 22 ports in 90 seconds.', device: 'ENG-EB110-PC03', deviceKind: 'Lab PC',
+    network: 'Lab LAN', source: 'Firewall (IPS)', location: 'Lecture Hall EB-110', faculty: 'Engineering', user: engStudents[4], severity: 'High', status: 'False positive', owner: 'Azlan (IT security)',
+    notes: [opened('16:20', 'Firewall intrusion prevention'), { time: '16:55', by: 'Azlan (IT security)', text: 'Approved network security lab exercise (KEE4412). Exception added for lab sessions.', status: 'False positive' }],
   },
 ]
 
-// Events the live feed draws from to raise new incidents.
-export const liveEventPool: Omit<Incident, 'id' | 'detected' | 'status' | 'owner' | 'notes' | 'user'>[] = [
-  { policyId: 'pol-1', category: 'Video streaming', destination: 'primevideo.com', device: 'UM-ENG-LT-0533', deviceKind: 'University laptop', network: 'UM-WiFi (campus)', source: 'Campus firewall', location: 'Lecture Hall EA-1, access point AP-EA1-03', faculty: 'Faculty of Engineering', volume: '640 MB', severity: 'Medium' },
-  { policyId: 'pol-4', category: 'VPN / proxy bypass', destination: 'Open web proxy', device: 'UM-ENG-LT-0611', deviceKind: 'University laptop', network: 'Off-campus Wi-Fi (endpoint agent)', source: 'Endpoint agent', location: 'Off campus (cafe hotspot)', faculty: 'Faculty of Engineering', volume: '120 MB', severity: 'High' },
-  { policyId: 'pol-2', category: 'Online gaming', destination: 'Valorant game client', device: 'ENG-EB110-PC03', deviceKind: 'Lab PC', network: 'Lab LAN (campus)', source: 'Campus firewall', location: 'Lecture Hall EB-110', faculty: 'Faculty of Engineering', volume: '310 MB', severity: 'Medium' },
-  { policyId: 'pol-3', category: 'Torrent / P2P', destination: 'uTorrent client', device: 'UM-ENG-LT-0479', deviceKind: 'University laptop', network: 'eduroam (campus)', source: 'Campus firewall', location: 'Engineering Block A, Level 1, AP-EA1-09', faculty: 'Faculty of Engineering', volume: '2.1 GB', severity: 'High' },
-  { policyId: 'pol-1', category: 'Video streaming', destination: 'iq.com', device: 'UM-ENG-LT-0702', deviceKind: 'University laptop', network: 'UM-WiFi (campus)', source: 'DNS filter', location: 'Engineering Auditorium, AP-EB0-01', faculty: 'Faculty of Engineering', volume: '480 MB', severity: 'Medium' },
+// Events the automatic monitoring draws from to record new incidents.
+export const liveEventPool: Omit<Incident, 'id' | 'detected' | 'status' | 'owner' | 'notes'>[] = [
+  { policyId: 'pol-scan', category: 'Network attack', title: 'ARP spoofing detected on the lab network', evidence: 'A device claimed the gateway address and redirected traffic from 8 lab PCs.', device: 'ENG-EA210-PC09', deviceKind: 'Lab PC', network: 'Lab LAN', source: 'Firewall (IPS)', location: 'Electronics Lab EA-210', faculty: 'Engineering', user: engStudents[1], severity: 'High' },
+  { policyId: 'pol-unreg', category: 'Unauthorised device', title: 'Unregistered device on the IoT network', evidence: 'Unknown hardware address tried to reach room controllers on UM-IoT. Blocked and moved to guest network.', device: 'Unknown device', deviceKind: 'Unknown device', network: 'UM-IoT (VLAN 120)', source: 'Network access control', location: 'Lecture Hall EA-1', faculty: 'Engineering', user: null, severity: 'Medium' },
+  { policyId: 'pol-exfil', category: 'Data exfiltration', title: 'Possible DNS tunnelling from a university laptop', evidence: 'Unusually long and frequent DNS queries to a newly registered domain, about 300 MB in 20 minutes.', device: 'UM-ENG-LT-0611', deviceKind: 'University laptop', network: 'UM-WiFi', source: 'DNS security', location: 'Engineering Auditorium', faculty: 'Engineering', user: engStudents[3], severity: 'High' },
+  { policyId: 'pol-drift', category: 'Network inconsistency', title: 'Access point running outdated security settings', evidence: 'AP-EB0-02 is broadcasting with an older encryption mode that differs from the campus standard.', device: 'AP-EB0-02', deviceKind: 'University access point', network: 'UM-WiFi', source: 'Wi-Fi controller', location: 'Engineering Block B, Ground floor', faculty: 'Engineering', user: null, severity: 'Low' },
+  { policyId: 'pol-brute', category: 'Credential attack', title: 'Sign-ins to one account from two countries within 10 minutes', evidence: 'Successful sign-in on campus, then a failed sign-in from overseas using the same account.', device: 'Student account 23005419', deviceKind: 'Account', network: 'eduroam', source: 'Wi-Fi sign-in (identity)', location: 'Engineering Block A, Level 1', faculty: 'Engineering', user: engStudents[5], severity: 'Medium' },
+  { policyId: 'pol-policy', category: 'Policy breach', title: 'VPN used to bypass campus filtering', evidence: 'Unapproved VPN client connected during teaching hours on a university laptop.', device: 'UM-ENG-LT-0533', deviceKind: 'University laptop', network: 'UM-WiFi', source: 'Firewall (IPS)', location: 'Lecture Hall EB-110', faculty: 'Engineering', user: engStudents[2], severity: 'Medium' },
+  { policyId: 'pol-drift', category: 'Network inconsistency', title: 'Wi-Fi address pool almost exhausted', evidence: '97% of addresses in use on the Engineering Block B pool. New devices may fail to connect.', device: 'DHCP pool ENG-B-WIFI', deviceKind: 'Network service', network: 'UM-WiFi', source: 'Wi-Fi controller', location: 'Engineering Block B', faculty: 'Engineering', user: null, severity: 'Low' },
+  { policyId: 'pol-rogue', category: 'Rogue access point', title: 'Personal hotspot named "eduroam" detected', evidence: 'A phone hotspot is copying the eduroam name, which can capture sign-in details.', device: 'Unknown access point', deviceKind: 'Access point (not university-owned)', network: 'Campus Wi-Fi airspace', source: 'Wireless intrusion detection', location: 'Engineering Block A, Level 2', faculty: 'Engineering', user: null, severity: 'High' },
 ]
 
 export const usageByHour = [
@@ -268,7 +340,7 @@ export const usageByCategory = [
   { label: 'Video conferencing', value: 12 },
   { label: 'Search and general web', value: 9 },
   { label: 'Video streaming', value: 6 },
-  { label: 'Restricted categories', value: 4 },
+  { label: 'Blocked or suspicious', value: 4 },
 ]
 
 export const usageByBuilding = [
@@ -280,10 +352,12 @@ export const usageByBuilding = [
 ]
 
 export const telemetrySources = [
-  { name: 'Campus firewall', kind: 'Firewall and secure web gateway', last: '12 s ago', state: 'Live' as const },
-  { name: 'DNS filter', kind: 'DNS security service', last: '20 s ago', state: 'Live' as const },
-  { name: 'Endpoint agent', kind: 'Managed-device agent, reports from any network', last: '18 min ago', state: 'Stale' as const },
-  { name: 'Wi-Fi controller', kind: 'Access point and device location', last: '35 s ago', state: 'Live' as const },
+  { name: 'Wireless intrusion detection', kind: 'Scans campus airspace for rogue access points', last: '8 s ago', state: 'Live' as const },
+  { name: 'Firewall (IPS)', kind: 'Intrusion prevention and traffic analysis', last: '12 s ago', state: 'Live' as const },
+  { name: 'DNS security', kind: 'Blocks malicious and command-and-control domains', last: '20 s ago', state: 'Live' as const },
+  { name: 'Network access control', kind: 'Checks every device against the asset register', last: '15 s ago', state: 'Live' as const },
+  { name: 'Wi-Fi sign-in (identity)', kind: 'Sign-in attempts on UM-WiFi and eduroam', last: '6 s ago', state: 'Live' as const },
+  { name: 'Endpoint agent', kind: 'University laptops, reports from any network', last: '18 min ago', state: 'Stale' as const },
 ]
 
 // ---------------- Audit log ----------------
@@ -299,8 +373,8 @@ export interface AuditEntry {
 
 export const seedAudit: AuditEntry[] = [
   { id: 'au5', time: '10:05', actor: 'Azlan (IT security)', area: 'Network', action: 'Changed incident status', target: 'NET-2026-0141', detail: 'Acknowledged to Investigating' },
-  { id: 'au4', time: '09:40', actor: 'Mei Fong (IT security)', area: 'Network', action: 'Put incident on hold', target: 'NET-2026-0140', detail: 'Waiting for lab session to end' },
-  { id: 'au3', time: '09:12', actor: 'System', area: 'Reports', action: 'Published lecture recording', target: 'WIA2005 lecture 13' },
-  { id: 'au2', time: '08:55', actor: 'Prof. Dr. Lim Mei Ling', area: 'Reports', action: 'Exported report', target: 'Attendance by faculty, week 6' },
+  { id: 'au4', time: '09:02', actor: 'Kumar (Network ops)', area: 'Network', action: 'Put incident on hold', target: 'NET-2026-0139', detail: 'Device isolated, waiting for cleaning' },
+  { id: 'au3', time: '08:55', actor: 'Prof. Dr. Lim Mei Ling', area: 'Reports', action: 'Exported report', target: 'Attendance by faculty, week 6' },
+  { id: 'au2', time: '08:20', actor: 'Facilities admin', area: 'Devices', action: 'Paired device', target: 'FSKTM-DK2 front display', detail: 'Pairing number verified, UM-IoT (VLAN 120)' },
   { id: 'au1', time: '08:02', actor: 'Facilities admin', area: 'Rooms', action: 'Changed room state', target: 'FSKTM-MK1', detail: 'Operational to Under maintenance' },
 ]

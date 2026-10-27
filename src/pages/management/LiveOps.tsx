@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, Radio, Video, VideoOff, Wifi, WifiOff } from 'lucide-react'
-import { Badge, LiveBadge, Metric, Modal, Notice, PageHead, Panel, Bar } from '../../components/ui'
+import { Cctv, MonitorPlay, Wifi, WifiOff } from 'lucide-react'
+import { Badge, LiveBadge, Metric, Notice, PageHead, Panel, Bar } from '../../components/ui'
 import { faculties } from '../../data/mock'
 import type { Mode } from '../../data/types'
-import { useDemo } from '../../store/DemoStore'
 import { campusSessions, type CampusSession } from './liveData'
 import '../../styles/management.css'
 
 export default function LiveOps() {
-  const { toast } = useDemo()
   const navigate = useNavigate()
   const [rows, setRows] = useState<CampusSession[]>(campusSessions)
   const [faculty, setFaculty] = useState('All faculties')
   const [mode, setMode] = useState<'All modes' | Mode>('All modes')
-  const [observe, setObserve] = useState<CampusSession | null>(null)
 
   // Simulate attendee counts moving as students join and leave.
   useEffect(() => {
@@ -38,19 +35,13 @@ export default function LiveOps() {
   const liveTotal = faculties.reduce((s, f) => s + f.liveNow, 0)
   const joined = rows.reduce((s, r) => s + r.attendees, 0)
   const degraded = rows.filter((r) => r.health === 'Degraded').length
-  const recordingCount = rows.filter((r) => r.recording).length
-
-  const toggleRecording = (id: string) => {
-    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, recording: !r.recording } : r)))
-    const r = rows.find((x) => x.id === id)
-    if (r) toast(r.recording ? `Recording stopped for ${r.code}.` : `Recording started for ${r.code}.`, r.recording ? 'info' : 'ok')
-  }
+  const withCamera = rows.filter((r) => r.mode !== 'Online').length
 
   return (
     <>
       <PageHead
         title="Live operations"
-        sub="Every class running on the platform right now, with stream health and recording status."
+        sub="Every class running on the platform right now, with stream health. Observe a room through its classroom cameras."
         actions={<LiveBadge label={`${liveTotal} live now`} />}
       />
 
@@ -58,7 +49,7 @@ export default function LiveOps() {
         <Metric label="Live sessions" value={liveTotal} foot={`Showing ${rows.length} monitored sessions below`} />
         <Metric label="Participants in monitored sessions" value={<span className="mg-tick">{joined.toLocaleString()}</span>} foot="Updates every few seconds" />
         <Metric label="Streams with issues" value={degraded} foot={degraded ? 'ICT support notified' : 'All streams healthy'} />
-        <Metric label="Being recorded" value={recordingCount} foot="Published with captions after class" />
+        <Metric label="Rooms with live cameras" value={withCamera} foot="Hybrid and in-person classes" />
       </div>
 
       <Panel
@@ -91,7 +82,6 @@ export default function LiveOps() {
                 <th>Mode</th>
                 <th className="num">Joined</th>
                 <th>Stream</th>
-                <th>Recording</th>
                 <th />
               </tr>
             </thead>
@@ -128,21 +118,15 @@ export default function LiveOps() {
                     )}
                   </td>
                   <td>
-                    <button className={`btn xs ${r.recording ? 'danger' : 'secondary'}`} onClick={() => toggleRecording(r.id)}>
-                      {r.recording ? <Video size={13} /> : <VideoOff size={13} />}
-                      {r.recording ? 'Stop recording' : 'Start recording'}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className="btn xs secondary"
-                      onClick={() => {
-                        if (r.link) navigate(r.link)
-                        else setObserve(r)
-                      }}
-                    >
-                      <Eye size={13} /> Observe
-                    </button>
+                    {r.mode === 'Online' ? (
+                      <button className="btn xs secondary" onClick={() => navigate(`/management/live/${r.id}/observe`)} title="Online class: no room camera">
+                        <MonitorPlay size={13} /> View stream
+                      </button>
+                    ) : (
+                      <button className="btn xs secondary" onClick={() => navigate(`/management/live/${r.id}/observe`)}>
+                        <Cctv size={13} /> Observe
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -152,57 +136,9 @@ export default function LiveOps() {
       </Panel>
 
       <div className="mt-2">
-        <Notice>Observing a class opens a view-only seat that students cannot see. In production this would respect university policy on classroom observation and recording consent.</Notice>
+        <Notice>Observe opens the classroom cameras for that room in view-only mode. In production, camera access follows university policy on classroom observation, and only authorised staff can view footage.</Notice>
       </div>
 
-      <Modal
-        open={!!observe}
-        onClose={() => setObserve(null)}
-        title="Observer view"
-        sub={observe ? `${observe.code} ${observe.title}` : ''}
-        foot={
-          <>
-            <button className="btn secondary" onClick={() => setObserve(null)}>
-              Close
-            </button>
-            <button
-              className="btn"
-              onClick={() => {
-                setObserve(null)
-                navigate('/lecturer/live/s-wia2004-14')
-              }}
-            >
-              <Radio size={16} /> Open the full live class demo
-            </button>
-          </>
-        }
-      >
-        {observe && (
-          <>
-            <dl className="kv">
-              <dt>Lecturer</dt>
-              <dd>{observe.lecturer}</dd>
-              <dt>Faculty</dt>
-              <dd>{observe.faculty}</dd>
-              <dt>Room</dt>
-              <dd>{observe.room}</dd>
-              <dt>Started</dt>
-              <dd>{observe.started}</dd>
-              <dt>Participants</dt>
-              <dd>
-                {observe.attendees} of {observe.enrolled} enrolled
-              </dd>
-              <dt>Stream</dt>
-              <dd>{observe.mode === 'In person' ? 'Not streamed' : observe.health}</dd>
-              <dt>Recording</dt>
-              <dd>{observe.recording ? 'On' : 'Off'}</dd>
-            </dl>
-            <div className="mt-2">
-              <Notice tone="blue">Only WIA2004 Lecture 14 has a full live classroom in this proof of concept. Other sessions show summary details.</Notice>
-            </div>
-          </>
-        )}
-      </Modal>
     </>
   )
 }

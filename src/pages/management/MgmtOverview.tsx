@@ -27,8 +27,9 @@ export default function MgmtOverview() {
   const totalStudents = faculties.reduce((s, f) => s + f.students, 0)
   const avgAttendance = Math.round(faculties.reduce((s, f) => s + f.attendance * f.students, 0) / totalStudents)
   const avgCompletion = Math.round(faculties.reduce((s, f) => s + f.completion * f.students, 0) / totalStudents)
-  const available = state.rooms.filter((r) => r.status !== 'Offline' && r.status !== 'Issue reported').length
-  const roomPct = Math.round((available / state.rooms.length) * 100)
+  const subRooms = state.spaces.filter((r) => r.kind === 'sub' && r.state !== 'Deactivated')
+  const available = subRooms.filter((r) => r.state === 'Operational').length
+  const roomPct = Math.round((available / Math.max(1, subRooms.length)) * 100)
   const openInc = state.incidents.filter((i) => !['Resolved', 'False positive'].includes(i.status))
   const highTickets = state.tickets.filter((t) => t.priority === 'High' && t.status !== 'Resolved')
 
@@ -69,7 +70,7 @@ export default function MgmtOverview() {
         <Metric label="Live sessions now" value={liveNow} foot="Across 8 faculties" />
         <Metric label="Average attendance" value={avgAttendance} unit="%" foot={<><span className="delta-down">-1 pt</span> on week 6</>} />
         <Metric label="Course completion" value={avgCompletion} unit="%" foot="Semester to date" />
-        <Metric label="Smart rooms available" value={roomPct} unit="%" foot={`${available} of ${state.rooms.length} monitored rooms`} />
+        <Metric label="Smart rooms available" value={roomPct} unit="%" foot={`${available} of ${subRooms.length} rooms operational`} />
       </div>
 
       <div className="grid g-main-side">
@@ -123,7 +124,7 @@ export default function MgmtOverview() {
         <div className="stack">
           <Panel
             title="Network incidents"
-            sub={`${openInc.length} open, Faculty of Engineering monitoring`}
+            sub={`${openInc.length} open, recorded automatically`}
             action={<Link to="/management/network" className="btn secondary sm">Open incidents</Link>}
             bodyClass="panel-body tight"
           >
@@ -138,7 +139,7 @@ export default function MgmtOverview() {
                     </span>
                     <div className="grow">
                       <div className="title truncate">
-                        {i.id}: {i.category}
+                        {i.id}: {i.title}
                       </div>
                       <div className="sub truncate">
                         {i.network}, {i.detected}

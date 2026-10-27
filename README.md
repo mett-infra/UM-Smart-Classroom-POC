@@ -29,7 +29,16 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - **Network incidents** (`/management/network`): live alerts when a Faculty of Engineering managed device reaches a restricted site or app, on campus Wi-Fi, eduroam, lab LAN or another network (via the endpoint agent). A banner appears on every management page. Lifecycle: New, Acknowledged, Investigating, On hold, Resolved, False positive, with owner, notes and history. Also internet usage by hour, category and building, data-source freshness, and restricted policies.
 - **Campus setup** (`/management/campus`): campus, building, floor and room tree; room master editor with validation and setup checks; device registry; CSV import with row-by-row validation.
 - **Audit log** (`/management/audit`): who changed what and when, with export.
-- Demo tip: on Network incidents, press **Simulate network event** to raise an incident on the spot. The live feed also raises one about every minute.
+
+### Review 1 changes (management)
+- **Live operations:** recording controls removed. **Observe** opens a simulated CCTV view of the room (3 cameras, pan, tilt, zoom, snapshot, full screen; faces blurred). Online classes show that there is no room camera.
+- **Navigation:** Academic performance and Students and staff removed.
+- **Network incidents:** no manual reporting. Unauthorised, malicious or unusual network activity (rogue Wi-Fi, credential attacks, malware traffic, unregistered devices, spoofing, data exfiltration, configuration drift) is detected and recorded automatically. The first event arrives about 20 seconds after the management panel opens, then about once a minute. Presenter shortcut: **Shift + N** records the next event immediately.
+- **Campus setup:** Building, master room, sub room hierarchy. Devices are paired to sub rooms with a wizard: device name and pairing number, network check (device and room gateway must be on UM-IoT), pairing progress bar, then either troubleshooting (wrong network or wrong pairing number) or successful registration.
+- **Smart rooms:** shows every sub room from Campus setup with its paired devices, an interactive room layout (tap a device to control it), room scenes and per-device controls.
+- **Maintenance:** "Report an issue" removed. Ticket numbers open a detailed dialog (what happened, impact, signals, next steps, history).
+- **Reports:** "Proposed success measures" removed.
+- Saved demo data moved to a new storage key, so every browser starts from the new sample data.
 
 ## Suggested demo path (about 10 minutes)
 

@@ -17,6 +17,17 @@ export interface ActivityItem {
   kind: 'live' | 'submit' | 'ticket' | 'announce' | 'grade' | 'room' | 'material' | 'network'
 }
 
+export interface DeviceState {
+  on: boolean
+  level: number // lights 0-100
+  temp: number // air-con
+  speed: number // fan 1-3
+  input: string // display
+  locked: boolean // door
+}
+
+export const defaultDeviceState = (): DeviceState => ({ on: true, level: 80, temp: 23, speed: 2, input: 'HDMI 1', locked: false })
+
 export interface RoomControls {
   display: boolean
   audio: boolean
@@ -47,9 +58,11 @@ interface DemoState {
   spaces: Space[]
   devices: Device[]
   audit: AuditEntry[]
+  deviceState: Record<string, DeviceState>
 }
 
-const KEY = 'um-smart-classroom-poc:v1'
+// v2: Review 1 changed the room and incident structure, so older saved demo data is ignored.
+const KEY = 'um-smart-classroom-poc:v2'
 
 function seedMarks() {
   // Assignment 2 (a1): 61 of 142 submitted; lecturer roster shows first 28 with some marked
@@ -97,6 +110,7 @@ const initialState = (): DemoState => ({
   spaces: seedSpaces,
   devices: seedDevices,
   audit: seedAudit,
+  deviceState: {},
 })
 
 function load(): DemoState {

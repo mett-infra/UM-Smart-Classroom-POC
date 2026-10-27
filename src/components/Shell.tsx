@@ -17,7 +17,6 @@ import {
   Search,
   Sparkles,
   Table2,
-  Users,
   Wrench,
   PlayCircle,
   Briefcase,
@@ -108,8 +107,6 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
       items: [
         { to: '/management', label: 'Overview', icon: <LayoutDashboard size={s} />, end: true },
         { to: '/management/live', label: 'Live operations', icon: <Radio size={s} />, live: true },
-        { to: '/management/academics', label: 'Academic performance', icon: <GraduationCap size={s} /> },
-        { to: '/management/people', label: 'Students and staff', icon: <Users size={s} /> },
       ],
     },
     {
@@ -209,7 +206,7 @@ export function Shell({ role }: { role: Role }) {
     window.scrollTo(0, 0)
   }, [loc.pathname])
 
-  const searchTarget = role === 'student' ? '/student/courses' : role === 'lecturer' ? '/lecturer/courses' : '/management/people'
+  const searchTarget = role === 'student' ? '/student/courses' : role === 'lecturer' ? '/lecturer/courses' : '/management/campus'
 
   return (
     <div className="shell">
@@ -266,7 +263,7 @@ export function Shell({ role }: { role: Role }) {
             }}
           >
             <Search size={16} />
-            <input aria-label="Search" placeholder={role === 'management' ? 'Search students, staff or courses' : 'Search courses and materials'} value={q} onChange={(e) => setQ(e.target.value)} />
+            <input aria-label="Search" placeholder={role === 'management' ? 'Search rooms and devices' : 'Search courses and materials'} value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
           <div className="topbar-right">
             <span className="clock">Wed, 21 Oct 2026, teaching week 7</span>

@@ -41,7 +41,7 @@ const roles: { role: Role; label: string; icon: ReactElement; color: string; tin
     icon: <Briefcase size={18} />,
     color: 'var(--role-management)',
     tint: 'var(--plum-50)',
-    points: ['See every live session across faculties', 'Compare attendance and completion by faculty', 'Control smart rooms and track maintenance', 'Generate reports for quality reviews'],
+    points: ['See every live session and observe rooms through their cameras', 'Get network incidents recorded automatically', 'Set up rooms, pair devices and control smart rooms', 'Track maintenance and generate reports'],
   },
 ]
 
