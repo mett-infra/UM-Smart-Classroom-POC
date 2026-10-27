@@ -22,11 +22,15 @@ import {
   PlayCircle,
   Briefcase,
   UserRound,
+  ShieldAlert,
+  Network,
+  ScrollText,
 } from 'lucide-react'
 import { liveSessionId, notificationsByRole, personas } from '../data/mock'
 import type { Role } from '../data/types'
 import { useDemo } from '../store/DemoStore'
 import { Avatar } from './ui'
+import { IncidentWatch } from './IncidentWatch'
 
 export function BrandMark({ size = 38 }: { size?: number }) {
   return (
@@ -52,6 +56,7 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
   const { state } = useDemo()
   const pending = state.assignments.filter((a) => ['wia2004', 'wia2005', 'wie2003', 'wix2002', 'gig1012'].includes(a.courseId) && (a.status === 'Not started' || a.status === 'Draft')).length
   const openTickets = state.tickets.filter((t) => t.status !== 'Resolved').length
+  const openIncidents = state.incidents.filter((i) => !['Resolved', 'False positive'].includes(i.status)).length
   const s = 18
   if (role === 'student')
     return [
@@ -110,15 +115,21 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
     {
       heading: 'Campus',
       items: [
+        { to: '/management/campus', label: 'Campus setup', icon: <Network size={s} /> },
         { to: '/management/rooms', label: 'Smart rooms', icon: <Building2 size={s} /> },
         { to: '/management/maintenance', label: 'Maintenance', icon: <Wrench size={s} />, count: openTickets },
       ],
+    },
+    {
+      heading: 'Security',
+      items: [{ to: '/management/network', label: 'Network incidents', icon: <ShieldAlert size={s} />, count: openIncidents }],
     },
     {
       heading: 'Communication',
       items: [
         { to: '/management/announcements', label: 'Announcements', icon: <Megaphone size={s} /> },
         { to: '/management/reports', label: 'Reports', icon: <FileText size={s} /> },
+        { to: '/management/audit', label: 'Audit log', icon: <ScrollText size={s} /> },
       ],
     },
   ]
@@ -263,6 +274,7 @@ export function Shell({ role }: { role: Role }) {
             <Notifications role={role} />
           </div>
         </header>
+        {role === 'management' && <IncidentWatch />}
         <main className="content" id="main">
           <Outlet />
         </main>

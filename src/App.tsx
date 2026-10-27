@@ -31,6 +31,9 @@ import People from './pages/management/People'
 import Rooms from './pages/management/Rooms'
 import Maintenance from './pages/management/Maintenance'
 import Reports from './pages/management/Reports'
+import NetworkIncidents from './pages/management/NetworkIncidents'
+import CampusSetup from './pages/management/CampusSetup'
+import AuditLog from './pages/management/AuditLog'
 
 export default function App() {
   return (
@@ -76,6 +79,9 @@ export default function App() {
           <Route path="maintenance" element={<Maintenance />} />
           <Route path="announcements" element={<Announcements role="management" />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="network" element={<NetworkIncidents />} />
+          <Route path="campus" element={<CampusSetup />} />
+          <Route path="audit" element={<AuditLog />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 

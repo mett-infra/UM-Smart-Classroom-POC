@@ -1,0 +1,233 @@
+/* Smart campus additions (Day 1 onwards) */
+
+.nowrap {
+  white-space: nowrap;
+}
+
+/* incident banner, under the top bar on every management page */
+.incident-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 28px;
+  background: var(--red-50);
+  border-bottom: 1px solid #f4cdd2;
+  color: var(--red);
+  animation: bannerIn 0.25s ease;
+}
+
+.incident-banner.sev-medium {
+  background: var(--amber-50);
+  border-bottom-color: #f2dcb2;
+  color: var(--amber);
+}
+
+.incident-banner strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.incident-banner span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.incident-banner .btn {
+  flex-shrink: 0;
+}
+
+.incident-x {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+@keyframes bannerIn {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+}
+
+.row-new td {
+  background: #fff8f8;
+}
+
+.row-new td:first-child {
+  box-shadow: inset 3px 0 var(--red);
+}
+
+/* incident timeline */
+.inc-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  border-left: 2px solid var(--line);
+  margin-left: 4px;
+}
+
+.inc-timeline li {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+  padding-left: 12px;
+  position: relative;
+}
+
+.inc-timeline li::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line-strong);
+}
+
+.inc-timeline .badge {
+  margin-left: 6px;
+}
+
+.inc-timeline p {
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+/* telemetry sources */
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.source {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.source.stale {
+  border-color: #efdcae;
+  background: var(--gold-50);
+}
+
+/* campus tree */
+.tree {
+  padding: 0 8px 10px;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.tree-b,
+.tree-r {
+  width: 100%;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.tree-b {
+  font-weight: 700;
+}
+
+.tree-b:hover,
+.tree-r:hover {
+  background: var(--surface-2);
+}
+
+.tree-f {
+  margin-left: 22px;
+  border-left: 1px solid var(--line);
+  padding-left: 6px;
+}
+
+.tree-fl {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 10px 2px;
+}
+
+.tree-r {
+  font-size: 13px;
+}
+
+.tree-r.on {
+  background: var(--primary-50);
+  color: var(--primary-600);
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--line-strong);
+}
+
+.dot.st-green {
+  background: var(--green);
+}
+
+.dot.st-amber {
+  background: var(--amber);
+}
+
+.dot.st-red {
+  background: var(--red);
+}
+
+/* setup checks */
+.checks {
+  display: grid;
+  gap: 12px;
+}
+
+.check-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.check-row svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+@media (max-width: 900px) {
+  .incident-banner {
+    padding: 10px 16px;
+    flex-wrap: wrap;
+  }
+
+  .incident-banner .grow {
+    flex-basis: calc(100% - 60px);
+  }
+}
+
+@media (max-width: 640px) {
+  .inc-timeline li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

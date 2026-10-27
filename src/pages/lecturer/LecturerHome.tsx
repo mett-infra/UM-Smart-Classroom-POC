@@ -14,6 +14,7 @@ const activityIcon: Record<ActivityItem['kind'], ReactNode> = {
   grade: <CheckCircle2 size={16} />,
   room: <Users size={16} />,
   material: <Upload size={16} />,
+  network: <AlertTriangle size={16} />,
 }
 
 export default function LecturerHome() {

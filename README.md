@@ -21,6 +21,16 @@ Switch between portals at any time with the Student / Lecturer / Management swit
 - CSV and calendar downloads are generated in the browser.
 - The AI assistants are scripted and clearly labelled as simulated.
 
+## Smart campus build (week of 26 October 2026)
+
+Built from the meeting with the Deputy Dean and the functional specification (v1.0). Everything stays frontend only: integrations are simulated so the screens behave as if the backend already exists.
+
+### Day 1: Management (part 1)
+- **Network incidents** (`/management/network`): live alerts when a Faculty of Engineering managed device reaches a restricted site or app, on campus Wi-Fi, eduroam, lab LAN or another network (via the endpoint agent). A banner appears on every management page. Lifecycle: New, Acknowledged, Investigating, On hold, Resolved, False positive, with owner, notes and history. Also internet usage by hour, category and building, data-source freshness, and restricted policies.
+- **Campus setup** (`/management/campus`): campus, building, floor and room tree; room master editor with validation and setup checks; device registry; CSV import with row-by-row validation.
+- **Audit log** (`/management/audit`): who changed what and when, with export.
+- Demo tip: on Network incidents, press **Simulate network event** to raise an incident on the spot. The live feed also raises one about every minute.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.

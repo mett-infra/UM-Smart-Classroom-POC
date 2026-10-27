@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { announcements as seedAnnouncements, assignments as seedAssignments, roster, rooms as seedRooms, tickets as seedTickets } from '../data/mock'
 import type { Announcement, Assignment, Material, Room, Ticket } from '../data/types'
+import { seedAudit, seedDevices, seedIncidents, seedPolicies, seedSpaces, type AuditEntry, type Device, type Incident, type NetPolicy, type Space } from '../data/smartcampus'
 
 /*
   Frontend-only demo store.
@@ -13,7 +14,7 @@ export interface ActivityItem {
   text: string
   sub: string
   time: string
-  kind: 'live' | 'submit' | 'ticket' | 'announce' | 'grade' | 'room' | 'material'
+  kind: 'live' | 'submit' | 'ticket' | 'announce' | 'grade' | 'room' | 'material' | 'network'
 }
 
 export interface RoomControls {
@@ -38,6 +39,14 @@ interface DemoState {
   activity: ActivityItem[]
   readNotifications: string[]
   pollsVoted: Record<string, number>
+  // Day 1: smart campus management
+  incidents: Incident[]
+  netPolicies: NetPolicy[]
+  netFeed: boolean
+  dismissedIncidents: string[]
+  spaces: Space[]
+  devices: Device[]
+  audit: AuditEntry[]
 }
 
 const KEY = 'um-smart-classroom-poc:v1'
@@ -81,6 +90,13 @@ const initialState = (): DemoState => ({
   ],
   readNotifications: [],
   pollsVoted: {},
+  incidents: seedIncidents,
+  netPolicies: seedPolicies,
+  netFeed: true,
+  dismissedIncidents: [],
+  spaces: seedSpaces,
+  devices: seedDevices,
+  audit: seedAudit,
 })
 
 function load(): DemoState {
@@ -99,6 +115,7 @@ interface Ctx {
   state: DemoState
   update: (fn: (s: DemoState) => DemoState) => void
   log: (a: Omit<ActivityItem, 'id' | 'time'>) => void
+  audit: (a: Omit<AuditEntry, 'id' | 'time' | 'actor'> & { actor?: string }) => void
   toast: (text: string, tone?: Toast['tone']) => void
   toasts: Toast[]
   reset: () => void
@@ -141,6 +158,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, activity: [{ ...a, id: `ac${Date.now()}`, time: nowLabel() }, ...s.activity].slice(0, 30) }))
   }, [])
 
+  const audit = useCallback((a: Omit<AuditEntry, 'id' | 'time' | 'actor'> & { actor?: string }) => {
+    setState((s) => ({ ...s, audit: [{ actor: 'Prof. Dr. Lim Mei Ling', ...a, id: `au${Date.now()}${Math.random().toString(36).slice(2, 5)}`, time: nowLabel() }, ...s.audit].slice(0, 200) }))
+  }, [])
+
   const reset = useCallback(() => {
     try {
       localStorage.removeItem(KEY)
@@ -151,7 +172,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     toast('Demo data reset to the starting story.', 'info')
   }, [toast])
 
-  const value = useMemo(() => ({ state, update, log, toast, toasts, reset }), [state, update, log, toast, toasts, reset])
+  const value = useMemo(() => ({ state, update, log, audit, toast, toasts, reset }), [state, update, log, audit, toast, toasts, reset])
   return <DemoCtx.Provider value={value}>{children}</DemoCtx.Provider>
 }
 

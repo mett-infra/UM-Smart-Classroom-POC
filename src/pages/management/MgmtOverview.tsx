@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Area, CartesianGrid, ComposedChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Bar as RBar } from 'recharts'
-import { Activity, AlertTriangle, Building2, CheckCircle2, ClipboardCheck, Download, FileSpreadsheet, Megaphone, Radio, Users, Wrench, BookOpen } from 'lucide-react'
+import { Activity, AlertTriangle, Building2, CheckCircle2, ClipboardCheck, Download, FileSpreadsheet, Megaphone, Radio, Users, Wrench, BookOpen, ShieldAlert } from 'lucide-react'
 import { PageHead, Panel, Badge, LiveBadge, Metric, Empty } from '../../components/ui'
 import { axisProps, chartColors, gridProps, HBars, Legend, tooltipProps } from '../../components/charts'
 import { faculties, hourlyLoad, weeklyTrend } from '../../data/mock'
@@ -18,6 +18,7 @@ const activityIcon: Record<ActivityItem['kind'], ReactNode> = {
   grade: <CheckCircle2 size={16} />,
   room: <Building2 size={16} />,
   material: <BookOpen size={16} />,
+  network: <ShieldAlert size={16} />,
 }
 
 export default function MgmtOverview() {
@@ -28,6 +29,7 @@ export default function MgmtOverview() {
   const avgCompletion = Math.round(faculties.reduce((s, f) => s + f.completion * f.students, 0) / totalStudents)
   const available = state.rooms.filter((r) => r.status !== 'Offline' && r.status !== 'Issue reported').length
   const roomPct = Math.round((available / state.rooms.length) * 100)
+  const openInc = state.incidents.filter((i) => !['Resolved', 'False positive'].includes(i.status))
   const highTickets = state.tickets.filter((t) => t.priority === 'High' && t.status !== 'Resolved')
 
   const exportCsv = () => {
@@ -119,6 +121,35 @@ export default function MgmtOverview() {
         </div>
 
         <div className="stack">
+          <Panel
+            title="Network incidents"
+            sub={`${openInc.length} open, Faculty of Engineering monitoring`}
+            action={<Link to="/management/network" className="btn secondary sm">Open incidents</Link>}
+            bodyClass="panel-body tight"
+          >
+            {openInc.length === 0 ? (
+              <Empty icon={<ShieldAlert size={26} />} title="No open incidents">New policy events from the campus network will appear here.</Empty>
+            ) : (
+              <div className="list">
+                {openInc.slice(0, 3).map((i) => (
+                  <Link key={i.id} to={`/management/network?open=${i.id}`} className="list-item clickable" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <span className="icon-tile sm" style={{ background: i.severity === 'High' ? 'var(--red-50)' : 'var(--amber-50)', color: i.severity === 'High' ? 'var(--red)' : 'var(--amber)' }}>
+                      <ShieldAlert size={16} />
+                    </span>
+                    <div className="grow">
+                      <div className="title truncate">
+                        {i.id}: {i.category}
+                      </div>
+                      <div className="sub truncate">
+                        {i.network}, {i.detected}
+                      </div>
+                    </div>
+                    <Badge tone={i.status === 'New' ? 'red' : i.status === 'On hold' ? '' : 'amber'}>{i.status}</Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Panel>
           <Panel
             title="Live now"
             sub={`${liveNow} sessions across campus`}
