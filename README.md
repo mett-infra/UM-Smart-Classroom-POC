@@ -53,7 +53,9 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 ### Day 3: Management (part 3)
 - **Attendance** (`/management/attendance`): every room with its live headcount now and capacity alerts at 80% (busy) and 90% (near capacity). Select a room, then pick any day in the last 60 days from the calendar or date picker. Today is live: check-ins up to the demo clock, people still in the room, peak so far. Past days show the sessions held, everyone who attended (name, matric or staff ID, role, programme, faculty, time in and out, how they checked in, on time or late), filters, CSV export, and a person record with their last 60 days in that room. Opening a person record is written to the audit log.
 - Sample data covers holidays (Merdeka Day, Malaysia Day), the semester break, orientation week, hall events (career fair, Innovation Day) and Makmal 1 under maintenance.
-- Face sign-up for the mock student database is paused until the photos and consent are received.
+- **Face sign-up** (`/management/faces`): the face database for this proof of concept holds one demo participant, Pranav Kuri. Sign-up wizard: consent, photo upload or camera, an on-device check (face found, only one face, clear and large enough), then a face template is saved. **Test recognition** runs the 15-second scan used for live-session attendance and shows the match and its confidence (75% or more needed).
+- Face recognition is real and runs in the browser with the open-source face-api library (models in `public/models`, about 7 MB, loaded only on this page). **Photos and face templates are stored in that browser only**, never in this repository or on the website. Sign people up on the demo laptop before presenting. Reset demo data does not remove them; use Remove on the page.
+- The camera needs a secure address: the GitHub Pages site (https) or `localhost`.
 
 ## Suggested demo path (about 10 minutes)
 

@@ -36,6 +36,7 @@ import Observe from './pages/management/Observe'
 import Doors from './pages/management/Doors'
 import Automation from './pages/management/Automation'
 import RoomAttendance from './pages/management/RoomAttendance'
+import FaceSignup from './pages/management/FaceSignup'
 
 export default function App() {
   return (
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="doors" element={<Doors />} />
           <Route path="automation" element={<Automation />} />
           <Route path="attendance" element={<RoomAttendance />} />
+          <Route path="faces" element={<FaceSignup />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 

@@ -28,6 +28,7 @@ import {
   Network,
   ScrollText,
   UserCheck,
+  ScanFace,
 } from 'lucide-react'
 import { liveSessionId, notificationsByRole, personas } from '../data/mock'
 import type { Role } from '../data/types'
@@ -113,6 +114,7 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
         { to: '/management', label: 'Overview', icon: <LayoutDashboard size={s} />, end: true },
         { to: '/management/live', label: 'Live operations', icon: <Radio size={s} />, live: true },
         { to: '/management/attendance', label: 'Attendance', icon: <UserCheck size={s} /> },
+        { to: '/management/faces', label: 'Face sign-up', icon: <ScanFace size={s} /> },
       ],
     },
     {
