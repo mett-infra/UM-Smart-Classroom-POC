@@ -112,17 +112,17 @@ const modelOf: Record<DeviceType, string> = {
   'Room controller': 'IoT room controller gateway',
 }
 export const capsOf: Record<DeviceType, string[]> = {
-  'Interactive display': ['On / off', 'Input select'],
+  'Interactive display': ['On / off'],
   Projector: ['On / off'],
-  Lights: ['On / off', 'Dim 0-100%'],
-  Fan: ['On / off', 'Speed 1-3'],
-  'Air-conditioning': ['On / off', 'Set temperature'],
-  'PTZ camera': ['Track presenter', 'Presets', 'Video feed'],
+  Lights: ['On / off', 'Dim by voice'],
+  Fan: ['On / off'],
+  'Air-conditioning': ['On / off'],
+  'PTZ camera': ['On / off', 'Video feed'],
   'People counter': ['Live count'],
   'Motion sensor': ['Motion events'],
-  'Door controller': ['Lock / unlock', 'Status feedback'],
-  'Ceiling microphone': ['Mute', 'Gain'],
-  'Room controller': ['Scenes', 'Voice commands'],
+  'Door controller': ['Lock / unlock', 'Timer', 'Status feedback'],
+  'Ceiling microphone': ['On / off'],
+  'Room controller': ['All on / all off', 'Voice commands'],
 }
 export const AUTO_OFF_TYPES: DeviceType[] = ['Interactive display', 'Projector', 'Lights', 'Fan', 'Air-conditioning']
 export const shortType = (t: DeviceType) => t.split(' ').map((w) => w[0]).join('').toUpperCase()

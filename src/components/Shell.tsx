@@ -27,6 +27,7 @@ import {
   Mic,
   Network,
   ScrollText,
+  UserCheck,
 } from 'lucide-react'
 import { liveSessionId, notificationsByRole, personas } from '../data/mock'
 import type { Role } from '../data/types'
@@ -111,6 +112,7 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
       items: [
         { to: '/management', label: 'Overview', icon: <LayoutDashboard size={s} />, end: true },
         { to: '/management/live', label: 'Live operations', icon: <Radio size={s} />, live: true },
+        { to: '/management/attendance', label: 'Attendance', icon: <UserCheck size={s} /> },
       ],
     },
     {

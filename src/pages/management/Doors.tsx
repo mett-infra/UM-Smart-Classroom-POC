@@ -73,12 +73,25 @@ export default function Doors() {
         .filter((s) => s.kind === 'sub' && s.doorId && s.state !== 'Deactivated')
         .map((s) => {
           const ctl = state.devices.find((d) => d.spaceId === s.id && d.type === 'Door controller')
-          return { id: s.doorId!, space: s, scheduleId: state.doorAssign[s.doorId!] ?? scheduleForType(s.type), controller: ctl ? ctl.status : 'Not paired' }
+          const own = state.doorTimers[s.doorId!]
+          return { id: s.doorId!, space: s, scheduleId: own ? `timer-${s.doorId}` : (state.doorAssign[s.doorId!] ?? scheduleForType(s.type)), controller: ctl ? ctl.status : 'Not paired' }
         }),
-    [state.spaces, state.devices, state.doorAssign],
+    [state.spaces, state.devices, state.doorAssign, state.doorTimers],
   )
 
-  const sched = (id: string) => state.doorSchedules.find((d) => d.id === id) ?? state.doorSchedules[0]
+  // Door timers set per room in Smart rooms act as one-door schedules.
+  const allSchedules: DoorSchedule[] = useMemo(
+    () => [
+      ...state.doorSchedules,
+      ...Object.entries(state.doorTimers).map(([doorId, t]) => {
+        const sp = state.spaces.find((s) => s.doorId === doorId)
+        return { id: `timer-${doorId}`, name: `${sp?.name ?? doorId} timer`, unlock: t.unlock, lock: t.lock, days: t.days } as DoorSchedule
+      }),
+    ],
+    [state.doorSchedules, state.doorTimers, state.spaces],
+  )
+
+  const sched = (id: string) => allSchedules.find((d) => d.id === id) ?? state.doorSchedules[0]
   const inWindow = (s: DoorSchedule, m: number) => s.days.includes(DAY) && m >= toMin(s.unlock) && m < toMin(s.lock)
 
   const doorState = (d: Door): DoorState => {
@@ -100,7 +113,7 @@ export default function Doors() {
       const prev = simRef.current
       const step = Number(speed) / 240 // simulated minutes per 250 ms tick
       const nxt = Math.min(prev + step, 23 * 60 + 59)
-      state.doorSchedules.forEach((s) => {
+      allSchedules.forEach((s) => {
         if (!s.days.includes(DAY)) return
         for (const [kind, at] of [
           ['unlock', toMin(s.unlock)],
@@ -124,7 +137,7 @@ export default function Doors() {
     }, 250)
     return () => clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, speed, state.doorSchedules, state.doorOverrides, doors, state.fireAlarm])
+  }, [running, speed, allSchedules, state.doorOverrides, doors, state.fireAlarm])
 
   const boundary = (s: DoorSchedule, kind: 'unlock' | 'lock', at: number) => {
     const targets = doors.filter((d) => d.scheduleId === s.id && !state.fireAlarm.includes(d.space.buildingId) && !(state.doorOverrides[d.id]?.untilMin > at))
@@ -158,7 +171,12 @@ export default function Doors() {
   const fireOn = state.fireAlarm.length > 0
 
   const setSchedule = (d: Door, id: string) => {
-    update((s) => ({ ...s, doorAssign: { ...s.doorAssign, [d.id]: id } }))
+    if (id === d.scheduleId) return
+    update((s) => {
+      const timers = { ...s.doorTimers }
+      delete timers[d.id]
+      return { ...s, doorTimers: timers, doorAssign: { ...s.doorAssign, [d.id]: id } }
+    })
     audit({ area: 'Doors', action: 'Changed door schedule', target: d.id, detail: `${sched(d.scheduleId).name} to ${sched(id).name}` })
     toast(`${d.space.name} now follows ${sched(id).name}.`)
   }
@@ -223,6 +241,9 @@ export default function Doors() {
               <button className="btn secondary sm" onClick={() => watch('17:00')}>
                 Watch the 17:00 lock
               </button>
+              <button className="btn secondary sm" onClick={() => watch('18:00')}>
+                Watch the 18:00 lock
+              </button>
               <button
                 className="btn ghost sm"
                 onClick={() => {
@@ -236,8 +257,8 @@ export default function Doors() {
           </div>
         </div>
         <div className="dayline">
-          {state.doorSchedules.map((s) => (
-            <div key={s.id} className="dayline-row">
+          {allSchedules.map((s) => (
+            <div key={s.id} className={`dayline-row ${s.id.startsWith('timer-') ? 'is-timer' : ''}`}>
               <span className="dayline-label truncate">{s.name}</span>
               <div className="dayline-track">
                 <span className="dayline-win" style={{ left: `${((toMin(s.unlock) - 360) / 960) * 100}%`, width: `${((toMin(s.lock) - toMin(s.unlock)) / 960) * 100}%` }}>
@@ -289,6 +310,11 @@ export default function Doors() {
                     </td>
                     <td>
                       <select className="select sm" style={{ minWidth: 150 }} value={d.scheduleId} onChange={(e) => setSchedule(d, e.target.value)} aria-label={`Schedule for ${d.space.name}`}>
+                        {d.scheduleId.startsWith('timer-') && (
+                          <option value={d.scheduleId}>
+                            Own timer ({sched(d.scheduleId).unlock} to {sched(d.scheduleId).lock})
+                          </option>
+                        )}
                         {state.doorSchedules.map((s) => (
                           <option key={s.id} value={s.id}>
                             {s.name} ({s.unlock} to {s.lock})
@@ -388,6 +414,7 @@ export default function Doors() {
       {overrideFor && (
         <OverrideModal
           door={overrideFor}
+          sched={sched(overrideFor.scheduleId)}
           now={sim}
           onClose={() => setOverrideFor(null)}
           onDone={(o) => addEvent(fmt(sim), `${overrideFor.space.name}: ${o.locked ? 'locked' : 'unlocked'} by override until ${fmt(o.untilMin)}. Confirmed by controller.`, 'info')}
@@ -398,11 +425,10 @@ export default function Doors() {
   )
 }
 
-function OverrideModal({ door, now, onClose, onDone }: { door: Door; now: number; onClose: () => void; onDone: (o: DoorOverride) => void }) {
-  const { state, update, toast, audit } = useDemo()
+function OverrideModal({ door, sched, now, onClose, onDone }: { door: Door; sched: DoorSchedule; now: number; onClose: () => void; onDone: (o: DoorOverride) => void }) {
+  const { update, toast, audit } = useDemo()
   const [choice, setChoice] = useState<'u30' | 'u60' | 'lock'>('u30')
   const [reason, setReason] = useState('')
-  const sched = state.doorSchedules.find((s) => s.id === door.scheduleId)!
   const save = () => {
     if (!reason.trim()) return toast('Add a reason. Overrides are recorded in the audit log.', 'warn')
     const nextUnlock = toMin(sched.unlock) > now ? toMin(sched.unlock) : 23 * 60 + 59
@@ -460,7 +486,7 @@ function SchedulesPanel() {
   const { state, update, toast, audit } = useDemo()
   const [edit, setEdit] = useState<Record<string, { unlock: string; lock: string }>>({})
   return (
-    <Panel title="Schedules" sub="Opening and closing times by room group">
+    <Panel title="Schedules" sub="Opening and closing times by room group. A room can also have its own door timer, set in Smart rooms.">
       <div className="stack" style={{ gap: 12 }}>
         {state.doorSchedules.map((s) => {
           const e = edit[s.id] ?? { unlock: s.unlock, lock: s.lock }

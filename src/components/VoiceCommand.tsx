@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Mic, MicOff, Send, XCircle } from 'lucide-react'
 import type { Device, DeviceType, Space } from '../data/smartcampus'
 import { nowLabel, useDemo, type DeviceState } from '../store/DemoStore'
-import { sceneStates, SCENES, stateOf, type Scene } from '../pages/management/roomControl'
+import { sceneStates, stateOf, type Scene } from '../pages/management/roomControl'
 import { Badge, Modal, Seg } from './ui'
 import '../styles/smartcampus.css'
 
@@ -64,25 +64,20 @@ function interpret(raw: string, room: Space, devices: Device[], all: Record<stri
   // Remove the room name and code first so numbers like "DK2" are not read as values.
   let t = ` ${raw.toLowerCase()} `
   for (const k of [room.name, room.code]) t = t.split(k.toLowerCase()).join(' ')
-  const scene: Scene | null = /(shut ?down|switch off everything|turn off everything|everything off|all off|matikan semua|tutup semua)/.test(t)
+  const scene: Scene | null = /(shut ?down|(switch|turn) off everything|everything off|all off|matikan semua|tutup semua)/.test(t)
     ? 'off'
-    : /(start (the )?class|mula(kan)? kelas)/.test(t)
-      ? 'start'
-      : /(presentation|pembentangan)/.test(t)
-        ? 'present'
-        : /(hybrid|hibrid)/.test(t)
-          ? 'hybrid'
-          : /(exam|peperiksaan)/.test(t)
-            ? 'exam'
-            : null
+    : /((switch|turn) on everything|everything on|all on|start (the )?class|hidupkan semua|mula(kan)? kelas)/.test(t)
+      ? 'on'
+      : null
   if (scene) {
     const { next, live, skipped } = sceneStates(devices, all, scene)
-    const label = SCENES.find((s) => s.id === scene)!.label
+    if (live === 0) return { ok: false, reason: `${room.name} has no devices online to switch ${scene}.` }
+    const label = scene === 'off' ? 'Everything switched off' : 'Everything switched on'
     return { ok: true, summary: `${label} in ${room.name}${skipped ? `, ${skipped} offline device${skipped > 1 ? 's' : ''} skipped` : ''}`, changes: next, failed: [], confirm: scene === 'off', count: live }
   }
 
   const match = deviceWords.find(([, re]) => re.test(t))
-  if (!match) return { ok: false, reason: 'That isn’t on the approved command list. Try lights, fan, air-con, projector, display, door, microphone or a room scene.' }
+  if (!match) return { ok: false, reason: 'That isn’t on the approved command list. Try lights, fan, air-con, projector, display, door, microphone, or everything on or off.' }
   const [type, , word] = match
   const targets = devices.filter((d) => d.type === type)
   if (targets.length === 0) return { ok: false, reason: `${room.name} has no ${word} paired, so nothing was changed.` }
@@ -101,16 +96,10 @@ function interpret(raw: string, room: Space, devices: Device[], all: Record<stri
     if (/\b(unlock|buka kunci|buka pintu|open)\b/.test(t)) (apply({ locked: false }), (summary = `Door in ${room.name} unlocked`))
     else if (/\b(lock|kunci|tutup|close)\b/.test(t)) (apply({ locked: true }), (summary = `Door in ${room.name} locked`))
     else return { ok: false, reason: 'Say "lock the door" or "unlock the door".' }
-  } else if (type === 'Air-conditioning' && /(\d{2})\s?(degrees?|°|darjah|c\b)|temp\w*\s+(to\s+)?\d{2}/.test(t)) {
-    const v = num(/(\d{2})/)!
-    if (v < 16 || v > 30) return { ok: false, reason: 'Air-con can be set between 16 and 30 degrees.' }
-    apply({ on: true, temp: v })
-    summary = `Air-con in ${room.name} set to ${v}°C`
-  } else if (type === 'Fan' && /(speed|kelajuan)\s?(\d)/.test(t)) {
-    const v = num(/(?:speed|kelajuan)\s?(\d)/)!
-    if (v < 1 || v > 3) return { ok: false, reason: 'Fan speed can be 1, 2 or 3.' }
-    apply({ on: true, speed: v })
-    summary = `Fan in ${room.name} set to speed ${v}`
+  } else if (type === 'Air-conditioning' && /(\d{2})\s?(degrees?|°|darjah|c\b)|temp\w*/.test(t)) {
+    return { ok: false, reason: 'Air-con can only be switched on or off. Say "switch on the air-con" or "switch off the air-con".' }
+  } else if (type === 'Fan' && /(speed|kelajuan)/.test(t)) {
+    return { ok: false, reason: 'The fan can only be switched on or off. Say "switch off the fan".' }
   } else if (type === 'Lights' && /\b(dim|malapkan|brightness|kecerahan)\b|(\d{1,3})\s?(%|percent|peratus)/.test(t)) {
     const v = num(/(\d{1,3})\s?(?:%|percent|peratus)?/) ?? 30
     if (v < 5 || v > 100) return { ok: false, reason: 'Brightness can be between 5 and 100 percent.' }
@@ -129,7 +118,7 @@ function interpret(raw: string, room: Space, devices: Device[], all: Record<stri
     apply({ on: true })
     summary = `${word[0].toUpperCase()}${word.slice(1)} in ${room.name} switched on`
   } else {
-    return { ok: false, reason: `I heard "${word}" but not what to do. Say on, off, dim, set temperature, lock or unlock.` }
+    return { ok: false, reason: `I heard "${word}" but not what to do. Say on, off, lock or unlock (or dim, for lights).` }
   }
   if (live.length === 0) return { ok: false, reason: `The ${word} in ${room.name} is offline, so the command could not run. Check Maintenance.` }
   return { ok: true, summary, changes, failed, count: live.length }
@@ -144,7 +133,7 @@ interface Entry {
   text: string
 }
 
-const EXAMPLES = ['Dim the lights to 30% in DK2', 'Turn off the fan', 'Set the air-con to 22 degrees', 'Lock the door', 'Start class', 'Tutup lampu', 'Matikan kipas', 'Shut down the room']
+const EXAMPLES = ['Dim the lights to 30% in DK2', 'Turn off the fan', 'Switch on the air-con', 'Lock the door', 'Switch everything on', 'Tutup lampu', 'Matikan kipas', 'Switch everything off']
 
 export function VoiceCommand({ roomId, onClose }: { roomId?: string; onClose: () => void }) {
   const { state, update, audit, toast } = useDemo()
@@ -287,7 +276,7 @@ export function VoiceCommand({ roomId, onClose }: { roomId?: string; onClose: ()
           <AlertTriangle size={18} />
           <div className="grow">
             <strong className="small">Confirm: {pending.plan.summary}</strong>
-            <p className="xs muted">This changes {pending.plan.count} devices and locks the door. Emergency exits stay in local control.</p>
+            <p className="xs muted">This switches off {pending.plan.count} devices in the room. Doors and sensors are not changed.</p>
           </div>
           <button
             className="btn secondary sm"

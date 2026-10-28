@@ -46,6 +46,15 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - **Voice commands**: microphone button in the management top bar and in each Smart room. Works by voice in Chrome and Edge (English or Bahasa Melayu) or by typing. Only approved commands run, the room must be clear, shutting down a room asks for confirmation, and every command is logged.
 - Demo tip: on Door schedules click **Watch the 17:00 lock**. On Automation pick a room, click **Everyone leaves** at 60x speed.
 
+### Review 2 changes (Smart rooms)
+- **Smart rooms simplified:** the room layout and scenes are replaced by one card per device with a clear **On / Off** switch. Air-con, fans, displays, cameras and microphones are on or off only (no temperature, speed or input settings). Room-wide buttons: **All on**, **All off** (asks first). Lights can still be dimmed by voice, as agreed in the meeting.
+- **Door:** **Lock / Unlock** only, plus a **door timer** per room (for example DK1 unlocks at 08:00 and locks at 18:00, Monday to Friday). The timer also appears on Door schedules and runs in its simulation ("Watch the 18:00 lock").
+
+### Day 3: Management (part 3)
+- **Attendance** (`/management/attendance`): every room with its live headcount now and capacity alerts at 80% (busy) and 90% (near capacity). Select a room, then pick any day in the last 60 days from the calendar or date picker. Today is live: check-ins up to the demo clock, people still in the room, peak so far. Past days show the sessions held, everyone who attended (name, matric or staff ID, role, programme, faculty, time in and out, how they checked in, on time or late), filters, CSV export, and a person record with their last 60 days in that room. Opening a person record is written to the audit log.
+- Sample data covers holidays (Merdeka Day, Malaysia Day), the semester break, orientation week, hall events (career fair, Innovation Day) and Makmal 1 under maintenance.
+- Face sign-up for the mock student database is paused until the photos and consent are received.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.

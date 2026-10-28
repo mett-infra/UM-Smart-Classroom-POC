@@ -26,7 +26,7 @@ export interface DeviceState {
   locked: boolean // door
 }
 
-export const defaultDeviceState = (): DeviceState => ({ on: true, level: 80, temp: 23, speed: 2, input: 'HDMI 1', locked: false })
+export const defaultDeviceState = (): DeviceState => ({ on: true, level: 100, temp: 23, speed: 2, input: 'HDMI 1', locked: false })
 
 export interface RoomControls {
   display: boolean
@@ -67,6 +67,14 @@ interface DemoState {
   fireAlarm: string[]
   autoRules: AutoRule[]
   autoLog: AutoOutcome[]
+  // Review 2: door timers set per room in Smart rooms (door id -> times)
+  doorTimers: Record<string, DoorTimer>
+}
+
+export interface DoorTimer {
+  unlock: string // 'HH:MM'
+  lock: string
+  days: number[] // 1 Mon .. 5 Fri, 6 Sat, 0 Sun
 }
 
 export interface DoorOverride {
@@ -132,6 +140,8 @@ const initialState = (): DemoState => ({
   fireAlarm: [],
   autoRules: seedAutoRules,
   autoLog: seedAutoLog,
+  // Example from the review: classroom DK1 unlocks at 08:00 and locks at 18:00 on weekdays.
+  doorTimers: { 'DR-FS-DK1': { unlock: '08:00', lock: '18:00', days: [1, 2, 3, 4, 5] } },
 })
 
 function load(): DemoState {
@@ -167,6 +177,11 @@ export function nowLabel() {
 }
 
 const bootTime = Date.now()
+
+/** Minutes since midnight on the demo clock (starts 10:12, moves with real time). */
+export function demoMinutes() {
+  return Math.min(23 * 60 + 59, 10 * 60 + 12 + Math.floor((Date.now() - bootTime) / 60000))
+}
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DemoState>(load)

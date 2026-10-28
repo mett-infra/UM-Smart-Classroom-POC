@@ -1,18 +1,19 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Activity, AirVent, DoorClosed, DoorOpen, Fan, Lightbulb, Link2, Mic, MicOff, Minus, Monitor, Plus, Power, Projector, Router, Search, Settings2, Users, Video } from 'lucide-react'
-import { Badge, Empty, Metric, Modal, Notice, PageHead, Panel, Seg, Switch, type Tone } from '../../components/ui'
-import { buildings, type Device, type DeviceType, type Space } from '../../data/smartcampus'
-import { useDemo, type DeviceState } from '../../store/DemoStore'
-import { defaultsFor, SCENES, sceneStates, SENSORS, type Scene } from './roomControl'
+import { Activity, AirVent, CalendarClock, DoorClosed, DoorOpen, Fan, Lightbulb, Link2, Lock, LockOpen, Mic, Monitor, Power, Projector, Router, Search, Settings2, Users, Video } from 'lucide-react'
+import { Badge, Empty, Metric, Modal, Notice, PageHead, Panel, Seg, type Tone } from '../../components/ui'
+import { buildings, DAY_SHORT, scheduleForType, type Device, type DeviceType, type Space } from '../../data/smartcampus'
+import { demoMinutes, useDemo, type DeviceState, type DoorTimer } from '../../store/DemoStore'
+import { capBand, liveHeadcount } from '../../data/attendance'
+import { defaultsFor, isSwitch, sceneStates, SENSORS, type Scene } from './roomControl'
 import { VoiceCommand } from '../../components/VoiceCommand'
 import '../../styles/management.css'
 import '../../styles/smartcampus.css'
 
 const stateTone: Record<Space['state'], Tone> = { Operational: 'green', 'Setup incomplete': 'amber', 'Under maintenance': 'red', Deactivated: '' }
 
-const iconFor = (d: Device, st: DeviceState, size = 18): ReactNode => {
-  switch (d.type) {
+const iconFor = (t: DeviceType, size = 20): ReactNode => {
+  switch (t) {
     case 'Interactive display':
       return <Monitor size={size} />
     case 'Projector':
@@ -20,15 +21,15 @@ const iconFor = (d: Device, st: DeviceState, size = 18): ReactNode => {
     case 'Lights':
       return <Lightbulb size={size} />
     case 'Fan':
-      return <Fan size={size} className={st.on ? 'spin-slow' : ''} />
+      return <Fan size={size} />
     case 'Air-conditioning':
       return <AirVent size={size} />
     case 'PTZ camera':
       return <Video size={size} />
     case 'Ceiling microphone':
-      return st.on ? <Mic size={size} /> : <MicOff size={size} />
+      return <Mic size={size} />
     case 'Door controller':
-      return st.locked ? <DoorClosed size={size} /> : <DoorOpen size={size} />
+      return <DoorClosed size={size} />
     case 'People counter':
       return <Users size={size} />
     case 'Motion sensor':
@@ -38,50 +39,18 @@ const iconFor = (d: Device, st: DeviceState, size = 18): ReactNode => {
   }
 }
 
-// Where each device type sits on the room layout (percent of width, height).
-const spot: Record<DeviceType, [number, number]> = {
-  'Interactive display': [36, 9],
-  Projector: [62, 24],
-  Lights: [16, 38],
-  Fan: [80, 50],
-  'Air-conditioning': [93, 30],
-  'PTZ camera': [7, 9],
-  'Ceiling microphone': [50, 52],
-  'Door controller': [9, 90],
-  'People counter': [24, 90],
-  'Motion sensor': [91, 10],
-  'Room controller': [80, 90],
+const DAY = 3 // the demo day is a Wednesday
+const WEEKDAYS = [1, 2, 3, 4, 5]
+const EVERY_DAY = [1, 2, 3, 4, 5, 6, 0]
+const toMin = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
 }
-
-
-function describe(d: Device, st: DeviceState, occupancy: number) {
-  if (d.status === 'Offline') return 'Offline'
-  switch (d.type) {
-    case 'Lights':
-      return st.on ? `On, ${st.level}%` : 'Off'
-    case 'Air-conditioning':
-      return st.on ? `On, ${st.temp}°C` : 'Off'
-    case 'Fan':
-      return st.on ? `On, speed ${st.speed}` : 'Off'
-    case 'Interactive display':
-      return st.on ? `On, ${st.input}` : 'Off'
-    case 'Door controller':
-      return st.locked ? 'Locked' : 'Unlocked'
-    case 'Ceiling microphone':
-      return st.on ? 'Live' : 'Muted'
-    case 'PTZ camera':
-      return st.on ? 'Tracking presenter' : 'Paused'
-    case 'People counter':
-      return `${occupancy} people now`
-    case 'Motion sensor':
-      return 'Motion 1 min ago'
-    case 'Room controller':
-      return 'Connected'
-    default:
-      return st.on ? 'On' : 'Off'
-  }
+const fmtTime = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number)
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
 }
-
+const daysLabel = (days: number[]) => (days.length === 7 ? 'every day' : days.join() === WEEKDAYS.join() ? 'Monday to Friday' : days.map((d) => DAY_SHORT[d]).join(', '))
 
 export default function Rooms() {
   const { state } = useDemo()
@@ -95,13 +64,13 @@ export default function Rooms() {
   const room = rooms.find((r) => r.id === sel) ?? rooms[0]
   const withDevices = rooms.filter((r) => devicesIn(r.id).length > 0).length
   const online = state.devices.filter((d) => d.status === 'Online').length
-  const onNow = state.devices.filter((d) => !SENSORS.includes(d.type) && d.status === 'Online' && (state.deviceState[d.id] ?? defaultsFor(d.type)).on).length
+  const onNow = state.devices.filter((d) => isSwitch(d.type) && d.status === 'Online' && (state.deviceState[d.id] ?? defaultsFor(d.type)).on).length
 
   return (
     <>
       <PageHead
         title="Smart rooms"
-        sub="Every room set up in Campus setup, with the devices paired to it. Pick a room, then tap a device on the layout to control it."
+        sub="Every room set up in Campus setup, with the devices paired to it. Pick a room, then switch each device on or off."
         actions={
           <Link to="/management/campus" className="btn secondary">
             <Settings2 size={16} /> Campus setup
@@ -164,17 +133,16 @@ export default function Rooms() {
 
 function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
   const { state, update, toast, audit } = useDemo()
-  const [picked, setPicked] = useState<string | null>(null)
   const [confirmOff, setConfirmOff] = useState(false)
   const [voice, setVoice] = useState(false)
   const master = state.spaces.find((s) => s.id === room.parentId)
   const st = (d: Device) => state.deviceState[d.id] ?? defaultsFor(d.type)
-  const occupancy = useMemo(() => Math.round(room.capacity * (room.id === 'sp-dk2' ? 0.53 : 0.4)), [room])
-  const lights = devices.filter((d) => d.type === 'Lights')
-  const lightLevel = lights.length && st(lights[0]).on && lights[0].status !== 'Offline' ? st(lights[0]).level : 0
-  const display = devices.find((d) => d.type === 'Interactive display')
-  const displayOn = !!display && st(display).on && display.status !== 'Offline'
-  const log = state.audit.filter((a) => a.target.includes(room.code) || a.target.startsWith(room.name) || a.detail?.includes(room.code)).slice(0, 5)
+  const people = liveHeadcount(room.id, demoMinutes())
+  const band = capBand(people, room.capacity)
+  const switches = devices.filter((d) => isSwitch(d.type))
+  const door = devices.find((d) => d.type === 'Door controller')
+  const sensors = devices.filter((d) => SENSORS.includes(d.type))
+  const log = state.audit.filter((a) => a.target.includes(room.code) || a.target.startsWith(room.name) || a.detail?.includes(room.code) || (room.doorId && a.target === room.doorId)).slice(0, 6)
 
   const setDev = (d: Device, patch: Partial<DeviceState>, msg: string) => {
     if (d.status === 'Offline') return toast(`${d.name} is offline, so it can't be controlled. Check Maintenance.`, 'warn')
@@ -183,21 +151,16 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
     toast(`${d.name}: ${msg}.`)
   }
 
-  const tap = (d: Device) => {
-    setPicked(d.id)
-    if (SENSORS.includes(d.type)) return
-    if (d.type === 'Door controller') return setDev(d, { locked: !st(d).locked }, st(d).locked ? 'unlocked' : 'locked')
-    if (d.type === 'Ceiling microphone') return setDev(d, { on: !st(d).on }, st(d).on ? 'muted' : 'live')
-    if (d.type === 'PTZ camera') return setDev(d, { on: !st(d).on }, st(d).on ? 'tracking paused' : 'tracking presenter')
-    setDev(d, { on: !st(d).on }, st(d).on ? 'switched off' : 'switched on')
+  const power = (d: Device, on: boolean) => {
+    if (st(d).on === on) return
+    setDev(d, on ? { on, ...(d.type === 'Lights' ? { level: 100 } : {}) } : { on }, on ? 'switched on' : 'switched off')
   }
 
-  const scene = (id: Scene) => {
+  const all = (id: Scene) => {
     const { next, live, skipped } = sceneStates(devices, state.deviceState, id)
     update((s) => ({ ...s, deviceState: { ...s.deviceState, ...next } }))
-    const label = SCENES.find((x) => x.id === id)!.label
-    audit({ area: 'Automation', action: `Ran scene: ${label}`, target: room.code, detail: `${live} devices${skipped ? `, ${skipped} offline skipped` : ''}` })
-    toast(`${label} applied to ${room.name}${skipped ? `. ${skipped} offline device${skipped > 1 ? 's were' : ' was'} skipped` : ''}.`)
+    audit({ area: 'Automation', action: id === 'on' ? 'Switched all devices on' : 'Switched all devices off', target: room.code, detail: `${live} devices${skipped ? `, ${skipped} offline skipped` : ''}` })
+    toast(`${room.name}: ${live} devices switched ${id}${skipped ? `. ${skipped} offline device${skipped > 1 ? 's were' : ' was'} skipped` : ''}.`)
     setConfirmOff(false)
   }
 
@@ -216,140 +179,101 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
     )
   }
 
-  const pickedDev = devices.find((d) => d.id === picked)
-
   return (
     <div className="stack">
       <Panel
         title={room.name}
         sub={`${master?.name ?? ''}, ${buildings.find((b) => b.id === room.buildingId)?.name}, ${room.floor}`}
         action={
-          <div className="row" style={{ gap: 8 }}>
-            <Badge>
-              <Users size={12} /> {occupancy} of {room.capacity}
+          <div className="row wrap" style={{ gap: 8 }}>
+            <Badge tone={band.tone === 'green' ? '' : band.tone}>
+              <Users size={12} /> {people} of {room.capacity} people
             </Badge>
             <Badge tone={stateTone[room.state]}>{room.state}</Badge>
           </div>
         }
       >
-        <div className="scene-row">
-          <button className="scene voice" onClick={() => setVoice(true)} title="Control this room by voice or typed command">
-            <Mic size={15} /> Voice command
-          </button>
-          {SCENES.map((s) => (
-            <button key={s.id} className={`scene ${s.id === 'off' ? 'danger' : ''}`} title={s.hint} onClick={() => (s.id === 'off' ? setConfirmOff(true) : scene(s.id))}>
-              {s.id === 'off' ? <Power size={15} /> : null}
-              {s.label}
+        <div className="row wrap between" style={{ gap: 10, marginBottom: 14 }}>
+          <span className="small muted">
+            {switches.filter((d) => d.status !== 'Offline' && st(d).on).length} of {switches.length} devices on
+          </span>
+          <div className="row wrap" style={{ gap: 8 }}>
+            <button className="btn secondary sm" onClick={() => setVoice(true)} title="Control this room by voice or typed command">
+              <Mic size={15} /> Voice command
             </button>
-          ))}
+            <button className="btn secondary sm" onClick={() => all('on')}>
+              <Power size={15} /> All on
+            </button>
+            <button className="btn secondary sm danger-hover" onClick={() => setConfirmOff(true)}>
+              <Power size={15} /> All off
+            </button>
+          </div>
         </div>
 
-        <div className="room-plan" style={{ ['--glow' as string]: lightLevel / 100 }} aria-label={`Layout of ${room.name}`}>
-          <div className="plan-front">
-            <span>Front of room</span>
-            <div className={`plan-screen ${displayOn ? 'on' : ''}`} />
-          </div>
-          <div className="plan-lights" aria-hidden>
-            {Array.from({ length: 12 }, (_, i) => (
-              <i key={i} />
-            ))}
-          </div>
-          <div className="plan-seats" aria-hidden>
-            {Array.from({ length: 5 }, (_, i) => (
-              <span key={i} style={{ width: `${62 + i * 6}%` }} />
-            ))}
-          </div>
-          <div className="plan-door" aria-hidden />
-          {devices.map((d, k) => {
+        <div className="dc-grid">
+          {switches.map((d) => {
             const s = st(d)
-            const [x, y] = spot[d.type]
-            const sameType = devices.filter((o) => o.type === d.type)
-            const idx = sameType.indexOf(d)
-            const active = d.type === 'Door controller' ? !s.locked : SENSORS.includes(d.type) ? true : s.on
+            const off = d.status === 'Offline'
             return (
-              <button
-                key={d.id}
-                className={`hot ${d.status === 'Offline' ? 'off-line' : active ? 'active' : ''} ${picked === d.id ? 'picked' : ''} ${SENSORS.includes(d.type) ? 'sensor' : ''}`}
-                style={{ left: `${x + idx * 7}%`, top: `${y + (idx % 2) * 10}%`, zIndex: 5 + k }}
-                onClick={() => tap(d)}
-                title={`${d.name}: ${describe(d, s, occupancy)}`}
-                aria-label={`${d.name}, ${describe(d, s, occupancy)}`}
-              >
-                <span className="hot-ico">{iconFor(d, s)}</span>
-                <span className="hot-label">{describe(d, s, occupancy)}</span>
-              </button>
+              <div key={d.id} className={`dc ${off ? 'dc-offline' : s.on ? 'dc-on' : ''}`}>
+                <div className="dc-head">
+                  <span className="dc-ico">{iconFor(d.type)}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <strong className="truncate">{d.name}</strong>
+                    <span className="truncate">{d.type}</span>
+                  </div>
+                </div>
+                <div className="dc-state">
+                  {off ? (
+                    <span className="c-red">Offline</span>
+                  ) : (
+                    <>
+                      <span className={`dc-dot ${s.on ? 'on' : ''}`} /> {s.on ? 'On' : 'Off'}
+                      {d.type === 'Lights' && s.on && s.level < 100 && <span className="xs muted"> (dimmed to {s.level}%)</span>}
+                    </>
+                  )}
+                </div>
+                {off ? (
+                  <p className="xs muted dc-note">
+                    Last seen {d.lastSeen}. <Link to="/management/maintenance">Check Maintenance</Link>
+                  </p>
+                ) : (
+                  <div className="onoff" role="group" aria-label={`${d.name} power`}>
+                    <button className={s.on ? 'sel' : ''} aria-pressed={s.on} onClick={() => power(d, true)}>
+                      On
+                    </button>
+                    <button className={!s.on ? 'sel' : ''} aria-pressed={!s.on} onClick={() => power(d, false)}>
+                      Off
+                    </button>
+                  </div>
+                )}
+              </div>
             )
           })}
+          {switches.length === 0 && <p className="small muted">No switchable devices in this room.</p>}
         </div>
-        <p className="xs muted mt-1">Tap a device to switch it on or off. Doors lock and unlock. Sensors show their latest reading.</p>
       </Panel>
 
       <div className="grid g-main-side">
-        <Panel title="Devices in this room" sub={`${devices.length} paired`} bodyClass="panel-body tight">
-          <div className="list">
-            {devices.map((d) => {
-              const s = st(d)
-              const off = d.status === 'Offline'
-              return (
-                <div key={d.id} className={`list-item dev-row ${picked === d.id ? 'picked' : ''}`} onClick={() => setPicked(d.id)}>
-                  <span className={`icon-tile sm ${off ? 'tile-off' : (d.type === 'Door controller' ? !s.locked : s.on) || SENSORS.includes(d.type) ? 'tile-on' : ''}`}>{iconFor(d, s, 16)}</span>
-                  <div className="grow" style={{ minWidth: 0 }}>
-                    <div className="title small truncate">{d.name}</div>
-                    <div className="sub xs">{off ? <span className="c-red">Offline, last seen {d.lastSeen}</span> : describe(d, s, occupancy)}</div>
-                    {!off && d.type === 'Lights' && s.on && (
-                      <input type="range" min={5} max={100} step={5} value={s.level} className="dim" aria-label="Brightness" onChange={(e) => update((x) => ({ ...x, deviceState: { ...x.deviceState, [d.id]: { ...s, level: Number(e.target.value) } } }))} onMouseUp={() => audit({ area: 'Automation', action: 'Dimmed lights', target: d.name, detail: `${s.level}%, ${room.code}` })} />
-                    )}
-                  </div>
-                  {!off && d.type === 'Air-conditioning' && s.on && (
-                    <div className="stepper">
-                      <button aria-label="Cooler" onClick={(e) => (e.stopPropagation(), setDev(d, { temp: Math.max(16, s.temp - 1) }, `set to ${Math.max(16, s.temp - 1)}°C`))}>
-                        <Minus size={13} />
-                      </button>
-                      <span className="num">{s.temp}°</span>
-                      <button aria-label="Warmer" onClick={(e) => (e.stopPropagation(), setDev(d, { temp: Math.min(30, s.temp + 1) }, `set to ${Math.min(30, s.temp + 1)}°C`))}>
-                        <Plus size={13} />
-                      </button>
-                    </div>
-                  )}
-                  {!off && d.type === 'Fan' && s.on && (
-                    <Seg value={String(s.speed) as '1' | '2' | '3'} onChange={(v) => setDev(d, { speed: Number(v) }, `speed ${v}`)} options={[{ id: '1', label: '1' }, { id: '2', label: '2' }, { id: '3', label: '3' }]} />
-                  )}
-                  {!off && d.type === 'Interactive display' && s.on && (
-                    <select className="select sm" style={{ width: 'auto' }} value={s.input} onClick={(e) => e.stopPropagation()} onChange={(e) => setDev(d, { input: e.target.value }, `input ${e.target.value}`)} aria-label="Display input">
-                      <option>HDMI 1</option>
-                      <option>Wireless share</option>
-                      <option>Room PC</option>
-                    </select>
-                  )}
-                  {!SENSORS.includes(d.type) && (
-                    <span onClick={(e) => e.stopPropagation()}>
-                      <Switch on={d.type === 'Door controller' ? s.locked : s.on} label={d.type === 'Door controller' ? `Lock ${d.name}` : `Power ${d.name}`} onChange={() => tap(d)} />
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </Panel>
+        <DoorPanel room={room} door={door} locked={door ? st(door).locked : false} onLock={(locked) => door && setDev(door, { locked }, locked ? 'locked' : 'unlocked')} />
         <div className="stack">
-          <Panel title={pickedDev ? pickedDev.name : 'Device details'} sub={pickedDev ? pickedDev.type : 'Tap a device to see its details'}>
-            {pickedDev ? (
-              <dl className="kv">
-                <dt>Status</dt>
-                <dd>{pickedDev.status}</dd>
-                <dt>Now</dt>
-                <dd>{describe(pickedDev, st(pickedDev), occupancy)}</dd>
-                <dt>Device ID</dt>
-                <dd>{pickedDev.id}</dd>
-                <dt>Network</dt>
-                <dd>{pickedDev.network}</dd>
-                <dt>Can do</dt>
-                <dd>{pickedDev.capabilities.join(', ')}</dd>
-                <dt>Auto-off</dt>
-                <dd>{pickedDev.autoOffEligible ? 'Eligible' : 'Always excluded'}</dd>
-              </dl>
+          <Panel title="Sensors" sub="Read only, updated by the devices">
+            {sensors.length === 0 ? (
+              <p className="small muted">No sensors paired.</p>
             ) : (
-              <p className="small muted">The layout and the list are linked. Pick a device in either to see it here.</p>
+              <div className="sensor-list">
+                {sensors.map((d) => (
+                  <div key={d.id} className="sensor">
+                    <span className="icon-tile sm tile-on">{iconFor(d.type, 16)}</span>
+                    <div className="grow" style={{ minWidth: 0 }}>
+                      <div className="small strong truncate">{d.name}</div>
+                      <div className="xs muted">
+                        {d.status === 'Offline' ? 'Offline' : d.type === 'People counter' ? `${people} people in the room now` : d.type === 'Motion sensor' ? (people ? 'Movement in the last minute' : 'No movement for 9 minutes') : d.status === 'Stale' ? 'Connected, last update 14 min ago' : 'Connected'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </Panel>
           <Panel title="Recent actions" sub="From the audit log" bodyClass="panel-body tight">
@@ -380,15 +304,15 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
       <Modal
         open={confirmOff}
         onClose={() => setConfirmOff(false)}
-        title={`Shut down ${room.name}?`}
-        sub="Switches off every display, light, fan and air-con unit and locks the door. Sensors stay on."
+        title={`Switch off everything in ${room.name}?`}
+        sub="Switches off every display, light, fan, air-con unit, camera and microphone. The door and sensors are not changed."
         foot={
           <>
             <button className="btn secondary" onClick={() => setConfirmOff(false)}>
               Keep running
             </button>
-            <button className="btn danger" onClick={() => scene('off')}>
-              Shut down room
+            <button className="btn danger" onClick={() => all('off')}>
+              Switch all off
             </button>
           </>
         }
@@ -396,5 +320,114 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
         <p className="small">Emergency exits and fire safety always stay in local control and are never affected.</p>
       </Modal>
     </div>
+  )
+}
+
+function DoorPanel({ room, door, locked, onLock }: { room: Space; door?: Device; locked: boolean; onLock: (locked: boolean) => void }) {
+  const { state, update, toast, audit } = useDemo()
+  const doorId = room.doorId ?? ''
+  const timer = state.doorTimers[doorId]
+  const sched = state.doorSchedules.find((s) => s.id === (state.doorAssign[doorId] ?? scheduleForType(room.type))) ?? state.doorSchedules[0]
+  const current: DoorTimer = timer ?? { unlock: sched.unlock, lock: sched.lock, days: sched.days }
+  const [unlock, setUnlock] = useState(current.unlock)
+  const [lock, setLock] = useState(current.lock)
+  const [days, setDays] = useState<'wk' | 'all'>(current.days.length === 7 ? 'all' : 'wk')
+  const dayList = days === 'all' ? EVERY_DAY : WEEKDAYS
+  const dirty = !timer || unlock !== current.unlock || lock !== current.lock || dayList.join() !== current.days.join()
+
+  if (!door) {
+    return (
+      <Panel title="Door" sub={doorId || 'No door linked'}>
+        <Empty icon={<DoorClosed size={26} />} title="No door controller paired">
+          Pair the door controller in Campus setup to lock, unlock and set a timer here.
+        </Empty>
+      </Panel>
+    )
+  }
+
+  const offline = door.status === 'Offline'
+  const now = demoMinutes()
+  const todayOn = current.days.includes(DAY)
+  const next = !todayOn ? `Next unlock on ${DAY_SHORT[current.days[0]]} at ${fmtTime(current.unlock)}.` : now < toMin(current.unlock) ? `Unlocks automatically at ${fmtTime(current.unlock)} today.` : now < toMin(current.lock) ? `Locks automatically at ${fmtTime(current.lock)} today.` : `Unlocks again tomorrow at ${fmtTime(current.unlock)}.`
+
+  const save = () => {
+    if (toMin(lock) <= toMin(unlock)) return toast('The lock time must be after the unlock time.', 'warn')
+    update((s) => ({ ...s, doorTimers: { ...s.doorTimers, [doorId]: { unlock, lock, days: dayList } } }))
+    audit({ area: 'Doors', action: timer ? 'Changed door timer' : 'Set door timer', target: doorId, detail: `${room.name}: unlock ${unlock}, lock ${lock}, ${daysLabel(dayList)}` })
+    toast(`${room.name} door: unlocks at ${fmtTime(unlock)} and locks at ${fmtTime(lock)}, ${daysLabel(dayList)}.`)
+  }
+
+  const clear = () => {
+    update((s) => {
+      const rest = { ...s.doorTimers }
+      delete rest[doorId]
+      return { ...s, doorTimers: rest }
+    })
+    setUnlock(sched.unlock)
+    setLock(sched.lock)
+    setDays(sched.days.length === 7 ? 'all' : 'wk')
+    audit({ area: 'Doors', action: 'Removed door timer', target: doorId, detail: `${room.name} back on ${sched.name}` })
+    toast(`${room.name} door follows the ${sched.name} schedule again.`)
+  }
+
+  return (
+    <Panel title="Door" sub={`${door.name}, ${doorId}`} action={<Badge tone={offline ? 'red' : locked ? 'blue' : 'green'}>{offline ? 'Offline' : locked ? 'Locked' : 'Unlocked'}</Badge>}>
+      <div className={`door-now ${offline ? 'dc-offline' : ''}`}>
+        <span className="dc-ico big">{locked ? <Lock size={24} /> : <LockOpen size={24} />}</span>
+        <div className="grow">
+          <strong>{offline ? 'State unknown' : locked ? 'Locked' : 'Unlocked'}</strong>
+          <div className="xs muted">{offline ? `Controller offline since ${door.lastSeen}. Lock and unlock are paused.` : 'Changes are confirmed by the door controller.'}</div>
+        </div>
+        <div className="onoff" role="group" aria-label="Door">
+          <button className={locked ? 'sel' : ''} aria-pressed={locked} disabled={offline} onClick={() => !locked && onLock(true)}>
+            <Lock size={14} /> Lock
+          </button>
+          <button className={!locked ? 'sel' : ''} aria-pressed={!locked} disabled={offline} onClick={() => locked && onLock(false)}>
+            <LockOpen size={14} /> Unlock
+          </button>
+        </div>
+      </div>
+
+      <div className="door-timer">
+        <div className="row between wrap" style={{ gap: 8 }}>
+          <strong className="small row" style={{ gap: 6 }}>
+            <CalendarClock size={16} /> Door timer
+          </strong>
+          <span className="xs muted">{timer ? 'Own timer for this room' : `Using the ${sched.name} schedule`}</span>
+        </div>
+        <div className="timer-fields">
+          <label className="field" style={{ marginBottom: 0 }}>
+            <span>Unlock at</span>
+            <input className="input" type="time" value={unlock} onChange={(e) => setUnlock(e.target.value)} />
+          </label>
+          <label className="field" style={{ marginBottom: 0 }}>
+            <span>Lock at</span>
+            <input className="input" type="time" value={lock} onChange={(e) => setLock(e.target.value)} />
+          </label>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <span>Days</span>
+            <Seg value={days} onChange={setDays} options={[{ id: 'wk', label: 'Mon to Fri' }, { id: 'all', label: 'Every day' }]} />
+          </div>
+        </div>
+        <div className="row wrap between" style={{ gap: 8, marginTop: 12 }}>
+          <span className="small row" style={{ gap: 6 }}>
+            <DoorOpen size={15} /> {next}
+          </span>
+          <div className="row" style={{ gap: 8 }}>
+            {timer && (
+              <button className="btn ghost sm" onClick={clear}>
+                Use building schedule
+              </button>
+            )}
+            <button className="btn sm" onClick={save} disabled={!dirty}>
+              {timer ? 'Save timer' : 'Set timer'}
+            </button>
+          </div>
+        </div>
+        <p className="xs muted" style={{ marginTop: 8 }}>
+          The timer also shows on <Link to="/management/doors">Door schedules</Link>. Fire alarms always release the door.
+        </p>
+      </div>
+    </Panel>
   )
 }

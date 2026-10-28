@@ -35,6 +35,7 @@ import AuditLog from './pages/management/AuditLog'
 import Observe from './pages/management/Observe'
 import Doors from './pages/management/Doors'
 import Automation from './pages/management/Automation'
+import RoomAttendance from './pages/management/RoomAttendance'
 
 export default function App() {
   return (
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="audit" element={<AuditLog />} />
           <Route path="doors" element={<Doors />} />
           <Route path="automation" element={<Automation />} />
+          <Route path="attendance" element={<RoomAttendance />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
