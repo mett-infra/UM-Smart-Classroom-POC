@@ -22,6 +22,9 @@ import {
   Briefcase,
   UserRound,
   ShieldAlert,
+  DoorClosed,
+  Timer,
+  Mic,
   Network,
   ScrollText,
 } from 'lucide-react'
@@ -30,6 +33,7 @@ import type { Role } from '../data/types'
 import { useDemo } from '../store/DemoStore'
 import { Avatar } from './ui'
 import { IncidentWatch } from './IncidentWatch'
+import { VoiceCommand } from './VoiceCommand'
 
 export function BrandMark({ size = 38 }: { size?: number }) {
   return (
@@ -114,6 +118,8 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
       items: [
         { to: '/management/campus', label: 'Campus setup', icon: <Network size={s} /> },
         { to: '/management/rooms', label: 'Smart rooms', icon: <Building2 size={s} /> },
+        { to: '/management/doors', label: 'Door schedules', icon: <DoorClosed size={s} /> },
+        { to: '/management/automation', label: 'Automation', icon: <Timer size={s} /> },
         { to: '/management/maintenance', label: 'Maintenance', icon: <Wrench size={s} />, count: openTickets },
       ],
     },
@@ -201,6 +207,7 @@ export function Shell({ role }: { role: Role }) {
   const loc = useLocation()
   const nav = useNavigate()
   const [q, setQ] = useState('')
+  const [voice, setVoice] = useState(false)
   useEffect(() => {
     setOpen(false)
     window.scrollTo(0, 0)
@@ -268,10 +275,16 @@ export function Shell({ role }: { role: Role }) {
           <div className="topbar-right">
             <span className="clock">Wed, 21 Oct 2026, teaching week 7</span>
             <RoleSwitch role={role} />
+            {role === 'management' && (
+              <button className="icon-btn" aria-label="Voice commands" title="Voice commands" onClick={() => setVoice(true)}>
+                <Mic size={18} />
+              </button>
+            )}
             <Notifications role={role} />
           </div>
         </header>
         {role === 'management' && <IncidentWatch />}
+        {voice && <VoiceCommand onClose={() => setVoice(false)} />}
         <main className="content" id="main">
           <Outlet />
         </main>

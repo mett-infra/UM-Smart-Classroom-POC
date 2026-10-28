@@ -33,6 +33,8 @@ import NetworkIncidents from './pages/management/NetworkIncidents'
 import CampusSetup from './pages/management/CampusSetup'
 import AuditLog from './pages/management/AuditLog'
 import Observe from './pages/management/Observe'
+import Doors from './pages/management/Doors'
+import Automation from './pages/management/Automation'
 
 export default function App() {
   return (
@@ -80,6 +82,8 @@ export default function App() {
           <Route path="network" element={<NetworkIncidents />} />
           <Route path="campus" element={<CampusSetup />} />
           <Route path="audit" element={<AuditLog />} />
+          <Route path="doors" element={<Doors />} />
+          <Route path="automation" element={<Automation />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 

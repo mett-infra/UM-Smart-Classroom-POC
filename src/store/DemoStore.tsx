@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { announcements as seedAnnouncements, assignments as seedAssignments, roster, rooms as seedRooms, tickets as seedTickets } from '../data/mock'
 import type { Announcement, Assignment, Material, Room, Ticket } from '../data/types'
-import { seedAudit, seedDevices, seedIncidents, seedPolicies, seedSpaces, type AuditEntry, type Device, type Incident, type NetPolicy, type Space } from '../data/smartcampus'
+import { seedAudit, seedAutoLog, seedAutoRules, seedDevices, seedDoorExceptions, seedDoorSchedules, seedIncidents, seedPolicies, seedSpaces, type AuditEntry, type AutoOutcome, type AutoRule, type Device, type DoorException, type DoorSchedule, type Incident, type NetPolicy, type Space } from '../data/smartcampus'
 
 /*
   Frontend-only demo store.
@@ -59,6 +59,20 @@ interface DemoState {
   devices: Device[]
   audit: AuditEntry[]
   deviceState: Record<string, DeviceState>
+  // Day 2: doors and automation
+  doorSchedules: DoorSchedule[]
+  doorAssign: Record<string, string>
+  doorExceptions: DoorException[]
+  doorOverrides: Record<string, DoorOverride>
+  fireAlarm: string[]
+  autoRules: AutoRule[]
+  autoLog: AutoOutcome[]
+}
+
+export interface DoorOverride {
+  locked: boolean
+  untilMin: number // minutes since midnight on the demo day
+  reason: string
 }
 
 // v2: Review 1 changed the room and incident structure, so older saved demo data is ignored.
@@ -111,6 +125,13 @@ const initialState = (): DemoState => ({
   devices: seedDevices,
   audit: seedAudit,
   deviceState: {},
+  doorSchedules: seedDoorSchedules,
+  doorAssign: {},
+  doorExceptions: seedDoorExceptions,
+  doorOverrides: {},
+  fireAlarm: [],
+  autoRules: seedAutoRules,
+  autoLog: seedAutoLog,
 })
 
 function load(): DemoState {

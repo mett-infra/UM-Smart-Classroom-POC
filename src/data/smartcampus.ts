@@ -153,7 +153,7 @@ function devicesFor(sp: Space, i: number): Device[] {
   if (sp.occupancySource?.startsWith('Motion')) types.push('Motion sensor')
   if (sp.doorId) types.push('Door controller')
   return types.map((t, k) => {
-    const offline = (sp.id === 'sp-c12' && t === 'Ceiling microphone') || (sp.id === 'sp-mk1' && t !== 'Door controller')
+    const offline = (sp.id === 'sp-c12' && t === 'Ceiling microphone') || (sp.id === 'sp-mk1' && t !== 'Door controller') || (sp.id === 'sp-ea210' && t === 'Door controller')
     const stale = sp.id === 'sp-b204' && t === 'Room controller'
     return {
       id: `${sp.code}-${shortType(t)}${k}`,
@@ -377,4 +377,70 @@ export const seedAudit: AuditEntry[] = [
   { id: 'au3', time: '08:55', actor: 'Prof. Dr. Lim Mei Ling', area: 'Reports', action: 'Exported report', target: 'Attendance by faculty, week 6' },
   { id: 'au2', time: '08:20', actor: 'Facilities admin', area: 'Devices', action: 'Paired device', target: 'FSKTM-DK2 front display', detail: 'Pairing number verified, UM-IoT (VLAN 120)' },
   { id: 'au1', time: '08:02', actor: 'Facilities admin', area: 'Rooms', action: 'Changed room state', target: 'FSKTM-MK1', detail: 'Operational to Under maintenance' },
+]
+
+// ---------------- Door schedules (Day 2) ----------------
+export interface DoorSchedule {
+  id: string
+  name: string
+  days: number[] // 1 = Monday ... 6 = Saturday, 0 = Sunday
+  unlock: string // HH:MM
+  lock: string
+}
+
+export const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+export const seedDoorSchedules: DoorSchedule[] = [
+  { id: 'ds-teach', name: 'Teaching rooms', days: [1, 2, 3, 4, 5], unlock: '08:00', lock: '17:00' },
+  { id: 'ds-lab', name: 'Labs', days: [1, 2, 3, 4, 5], unlock: '08:30', lock: '18:00' },
+  { id: 'ds-aud', name: 'Auditoriums and events', days: [1, 2, 3, 4, 5, 6], unlock: '07:30', lock: '22:00' },
+]
+
+export const scheduleForType = (t: SpaceType) => (t === 'Lab' ? 'ds-lab' : t === 'Auditorium' || t === 'Control room' ? 'ds-aud' : 'ds-teach')
+
+export interface DoorException {
+  id: string
+  name: string
+  dates: string
+  scope: string
+  behaviour: string
+  approvedBy: string
+}
+
+export const seedDoorExceptions: DoorException[] = [
+  { id: 'ex1', name: 'Mid-semester break', dates: '26 Oct to 1 Nov 2026', scope: 'Teaching rooms', behaviour: 'Stay locked all day', approvedBy: 'Facilities admin' },
+  { id: 'ex2', name: 'Convocation rehearsal', dates: 'Sat 24 Oct 2026', scope: 'Central Auditorium', behaviour: 'Open 07:00 to 22:00', approvedBy: 'Prof. Dr. Lim Mei Ling' },
+]
+
+// ---------------- Inactivity automation (Day 2) ----------------
+export interface AutoRule {
+  id: string
+  name: string
+  appliesTo: SubType[]
+  minutes: number
+  devices: DeviceType[]
+  window: string
+  active: boolean
+  paused: boolean
+}
+
+export const seedAutoRules: AutoRule[] = [
+  { id: 'ar-halls', name: 'Lecture halls and auditoriums', appliesTo: ['Lecture hall', 'Auditorium'], minutes: 15, devices: ['Projector', 'Interactive display', 'Lights', 'Air-conditioning'], window: 'Mon to Fri, 07:00 to 22:00', active: true, paused: false },
+  { id: 'ar-small', name: 'Seminar and smart rooms', appliesTo: ['Seminar room', 'Smart room'], minutes: 10, devices: ['Interactive display', 'Lights', 'Fan', 'Air-conditioning'], window: 'Mon to Fri, 07:00 to 22:00', active: true, paused: false },
+  { id: 'ar-labs', name: 'Labs', appliesTo: ['Lab'], minutes: 30, devices: ['Lights', 'Air-conditioning'], window: 'Every day', active: true, paused: false },
+]
+
+export interface AutoOutcome {
+  id: string
+  time: string
+  room: string
+  rule: string
+  evidence: string
+  off: string[]
+  failed: string[]
+}
+
+export const seedAutoLog: AutoOutcome[] = [
+  { id: 'ao2', time: '09:40', room: 'Smart Room EA-201', rule: 'Seminar and smart rooms', evidence: 'People counter at 0 for 10 min after the 08:30 class', off: ['display', 'lights', 'fans', 'air-conditioning'], failed: [] },
+  { id: 'ao1', time: 'Yesterday 18:25', room: 'Lecture Hall EA-1', rule: 'Lecture halls and auditoriums', evidence: 'People counter at 0 for 15 min after the last class', off: ['projector', 'display', 'lights', 'air-conditioning'], failed: [] },
 ]

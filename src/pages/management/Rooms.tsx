@@ -3,7 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Activity, AirVent, DoorClosed, DoorOpen, Fan, Lightbulb, Link2, Mic, MicOff, Minus, Monitor, Plus, Power, Projector, Router, Search, Settings2, Users, Video } from 'lucide-react'
 import { Badge, Empty, Metric, Modal, Notice, PageHead, Panel, Seg, Switch, type Tone } from '../../components/ui'
 import { buildings, type Device, type DeviceType, type Space } from '../../data/smartcampus'
-import { defaultDeviceState, useDemo, type DeviceState } from '../../store/DemoStore'
+import { useDemo, type DeviceState } from '../../store/DemoStore'
+import { defaultsFor, SCENES, sceneStates, SENSORS, type Scene } from './roomControl'
+import { VoiceCommand } from '../../components/VoiceCommand'
 import '../../styles/management.css'
 import '../../styles/smartcampus.css'
 
@@ -51,14 +53,6 @@ const spot: Record<DeviceType, [number, number]> = {
   'Room controller': [80, 90],
 }
 
-const SENSORS: DeviceType[] = ['People counter', 'Motion sensor', 'Room controller']
-
-function defaultsFor(t: DeviceType): DeviceState {
-  const d = defaultDeviceState()
-  if (t === 'Projector') d.on = false
-  if (t === 'Door controller') d.locked = false
-  return d
-}
 
 function describe(d: Device, st: DeviceState, occupancy: number) {
   if (d.status === 'Offline') return 'Offline'
@@ -88,14 +82,6 @@ function describe(d: Device, st: DeviceState, occupancy: number) {
   }
 }
 
-type Scene = 'start' | 'present' | 'hybrid' | 'exam' | 'off'
-const SCENES: { id: Scene; label: string; hint: string }[] = [
-  { id: 'start', label: 'Start class', hint: 'Lights 80%, display and audio on, door unlocked' },
-  { id: 'present', label: 'Presentation', hint: 'Lights dimmed to 35%, projector and display on' },
-  { id: 'hybrid', label: 'Hybrid', hint: 'Camera tracking, microphones live, display on' },
-  { id: 'exam', label: 'Exam', hint: 'Full lights, displays and microphones off' },
-  { id: 'off', label: 'Shut down room', hint: 'Switch everything off and lock the door' },
-]
 
 export default function Rooms() {
   const { state } = useDemo()
@@ -180,6 +166,7 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
   const { state, update, toast, audit } = useDemo()
   const [picked, setPicked] = useState<string | null>(null)
   const [confirmOff, setConfirmOff] = useState(false)
+  const [voice, setVoice] = useState(false)
   const master = state.spaces.find((s) => s.id === room.parentId)
   const st = (d: Device) => state.deviceState[d.id] ?? defaultsFor(d.type)
   const occupancy = useMemo(() => Math.round(room.capacity * (room.id === 'sp-dk2' ? 0.53 : 0.4)), [room])
@@ -206,22 +193,10 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
   }
 
   const scene = (id: Scene) => {
-    const live = devices.filter((d) => d.status !== 'Offline')
-    const skipped = devices.length - live.length
-    const next: Record<string, DeviceState> = {}
-    live.forEach((d) => {
-      const cur = { ...st(d) }
-      const t = d.type
-      if (id === 'start') Object.assign(cur, t === 'Lights' ? { on: true, level: 80 } : t === 'Door controller' ? { locked: false } : t === 'Projector' ? { on: false } : { on: true })
-      if (id === 'present') Object.assign(cur, t === 'Lights' ? { on: true, level: 35 } : t === 'Projector' || t === 'Interactive display' ? { on: true } : {})
-      if (id === 'hybrid') Object.assign(cur, t === 'PTZ camera' || t === 'Ceiling microphone' || t === 'Interactive display' ? { on: true } : t === 'Lights' ? { on: true, level: 70 } : {})
-      if (id === 'exam') Object.assign(cur, t === 'Lights' ? { on: true, level: 100 } : t === 'Interactive display' || t === 'Projector' || t === 'Ceiling microphone' ? { on: false } : {})
-      if (id === 'off') Object.assign(cur, t === 'Door controller' ? { locked: true } : SENSORS.includes(t) ? {} : { on: false })
-      next[d.id] = cur
-    })
+    const { next, live, skipped } = sceneStates(devices, state.deviceState, id)
     update((s) => ({ ...s, deviceState: { ...s.deviceState, ...next } }))
     const label = SCENES.find((x) => x.id === id)!.label
-    audit({ area: 'Automation', action: `Ran scene: ${label}`, target: room.code, detail: `${live.length} devices${skipped ? `, ${skipped} offline skipped` : ''}` })
+    audit({ area: 'Automation', action: `Ran scene: ${label}`, target: room.code, detail: `${live} devices${skipped ? `, ${skipped} offline skipped` : ''}` })
     toast(`${label} applied to ${room.name}${skipped ? `. ${skipped} offline device${skipped > 1 ? 's were' : ' was'} skipped` : ''}.`)
     setConfirmOff(false)
   }
@@ -258,6 +233,9 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
         }
       >
         <div className="scene-row">
+          <button className="scene voice" onClick={() => setVoice(true)} title="Control this room by voice or typed command">
+            <Mic size={15} /> Voice command
+          </button>
           {SCENES.map((s) => (
             <button key={s.id} className={`scene ${s.id === 'off' ? 'danger' : ''}`} title={s.hint} onClick={() => (s.id === 'off' ? setConfirmOff(true) : scene(s.id))}>
               {s.id === 'off' ? <Power size={15} /> : null}
@@ -398,6 +376,7 @@ function RoomControl({ room, devices }: { room: Space; devices: Device[] }) {
         </div>
       </div>
 
+      {voice && <VoiceCommand roomId={room.id} onClose={() => setVoice(false)} />}
       <Modal
         open={confirmOff}
         onClose={() => setConfirmOff(false)}

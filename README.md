@@ -40,6 +40,12 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - **Reports:** "Proposed success measures" removed.
 - Saved demo data moved to a new storage key, so every browser starts from the new sample data.
 
+### Day 2: Management (part 2)
+- **Door schedules** (`/management/doors`): a simulated campus clock (play, pause, fast-forward) drives door schedules. Teaching rooms open at 08:00 and lock at 17:00 (editable), labs 08:30 to 18:00, auditoriums 07:30 to 22:00. At each boundary the request goes to the controllers and the state shows only once confirmed; offline controllers show as unknown, never as locked. Manual overrides with reason and expiry, holiday exceptions, schedule per door, event log, and a fire alarm test that releases every door in a building.
+- **Automation** (`/management/automation`): inactivity rules by room type (after 5, 10, 15 or 30 minutes empty) with the devices each rule switches off. Door, camera, sensor, microphone, network and safety equipment is never switched off. A live simulation shows a room emptying, the countdown, and the automatic switch-off, with a history log.
+- **Voice commands**: microphone button in the management top bar and in each Smart room. Works by voice in Chrome and Edge (English or Bahasa Melayu) or by typing. Only approved commands run, the room must be clear, shutting down a room asks for confirmation, and every command is logged.
+- Demo tip: on Door schedules click **Watch the 17:00 lock**. On Automation pick a room, click **Everyone leaves** at 60x speed.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.
