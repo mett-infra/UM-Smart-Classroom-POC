@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Cctv, MonitorPlay, Wifi, WifiOff } from 'lucide-react'
+import { Cctv, Wifi, WifiOff } from 'lucide-react'
 import { Badge, LiveBadge, Metric, Notice, PageHead, Panel, Bar } from '../../components/ui'
 import { faculties } from '../../data/mock'
 import type { Mode } from '../../data/types'
@@ -41,7 +41,7 @@ export default function LiveOps() {
     <>
       <PageHead
         title="Live operations"
-        sub="Every class running on the platform right now, with stream health. Observe a room through its classroom cameras."
+        sub="Every class running on the platform right now, with stream health. Observe any class: rooms through their classroom cameras, online classes through the class stream."
         actions={<LiveBadge label={`${liveTotal} live now`} />}
       />
 
@@ -118,15 +118,9 @@ export default function LiveOps() {
                     )}
                   </td>
                   <td>
-                    {r.mode === 'Online' ? (
-                      <button className="btn xs secondary" onClick={() => navigate(`/management/live/${r.id}/observe`)} title="Online class: no room camera">
-                        <MonitorPlay size={13} /> View stream
-                      </button>
-                    ) : (
-                      <button className="btn xs secondary" onClick={() => navigate(`/management/live/${r.id}/observe`)}>
-                        <Cctv size={13} /> Observe
-                      </button>
-                    )}
+                    <button className="btn xs secondary" onClick={() => navigate(`/management/live/${r.id}/observe`)}>
+                      <Cctv size={13} /> Observe
+                    </button>
                   </td>
                 </tr>
               ))}

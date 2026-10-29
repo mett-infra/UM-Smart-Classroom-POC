@@ -127,11 +127,29 @@ export default function Observe() {
       />
 
       {s.mode === 'Online' ? (
-        <Panel title="Online class" sub="This class has no classroom, so there are no room cameras">
-          <div className="empty">
-            <MonitorPlay size={30} />
-            <strong>Streaming online to {s.attendees} participants</strong>
-            Stream health: {s.health}. Observers can join the online session from the class stream in production.
+        <Panel title="Class stream" sub="Online class, observed in view-only mode. You are not visible or audible to the class.">
+          <div className="ostream">
+            <div className="ostream-stage">
+              <div className="ostream-slide">
+                <span className="xs">{s.code}</span>
+                <strong>{s.title}</strong>
+                <span className="small">{s.lecturer}</span>
+              </div>
+              <div className="cctv-tr">
+                <span className="cctv-rec" /> LIVE <span className="num">{stamp}</span>
+              </div>
+              <div className="ostream-pip">
+                <MonitorPlay size={18} />
+                <span className="xs">{s.lecturer}</span>
+              </div>
+            </div>
+            <div className="ostream-meta">
+              <Badge tone="teal">Online</Badge>
+              <span className="small">
+                <strong>{s.attendees}</strong> of {s.enrolled} joined
+              </span>
+              <Badge tone={s.health === 'Good' ? 'green' : 'amber'}>Stream {s.health.toLowerCase()}</Badge>
+            </div>
           </div>
         </Panel>
       ) : (

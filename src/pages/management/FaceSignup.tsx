@@ -131,7 +131,16 @@ export default function FaceSignup() {
       </div>
 
       <div className="grid g-main-side face-grid">
-        <Panel title="Face database" sub="Demo participant for this proof of concept" bodyClass="panel-body tight">
+        <Panel
+          title="Face database"
+          sub={
+            <>
+              Demo participant for this proof of concept
+              <span className="face-note">This option is only for demo purposes. In production, the workflow would be configured based on feedback and information shared by the Universiti PIC.</span>
+            </>
+          }
+          bodyClass="panel-body tight"
+        >
           <div className="list">
             {facePeople.map((p) => {
               const f = faces[p.id]

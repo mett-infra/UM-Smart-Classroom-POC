@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarX2, Clock, DoorOpen, Flame, HelpCircle, Lock, LockOpen, Pause, Play, Plus, ShieldCheck, TimerReset } from 'lucide-react'
-import { Badge, Metric, Modal, Notice, PageHead, Panel, Seg, type Tone } from '../../components/ui'
+import { CalendarX2, DoorOpen, Pause, Play, Plus, TimerReset } from 'lucide-react'
+import { Badge, Metric, Modal, Notice, PageHead, Panel, Seg } from '../../components/ui'
 import { buildings, DAY_SHORT, scheduleForType, type DoorSchedule, type Space } from '../../data/smartcampus'
 import { useDemo, type DoorOverride } from '../../store/DemoStore'
 import '../../styles/management.css'
@@ -10,7 +10,7 @@ import '../../styles/smartcampus.css'
   Door schedule simulation (spec DR-01 to DR-10).
   A simulated campus clock drives the schedules. At each boundary the platform "requests" the state from the
   access-control system and only shows the result once the controller confirms it. Offline controllers are shown
-  as unknown, never as locked. Fire alarm release always wins.
+  as unknown, never as locked.
 */
 
 const DAY = 3 // Wednesday, the demo day
@@ -24,7 +24,7 @@ const fmt = (min: number) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 }
 
-type DoorState = 'open' | 'locked' | 'unknown' | 'unpaired' | 'released' | 'override-open' | 'override-locked' | 'pending'
+type DoorState = 'open' | 'locked' | 'unknown' | 'unpaired' | 'override-open' | 'override-locked' | 'pending'
 
 interface Door {
   id: string
@@ -40,20 +40,6 @@ interface EventRow {
   tone: 'ok' | 'warn' | 'bad' | 'info'
 }
 
-const stateInfo: Record<DoorState, { label: string; tone: Tone }> = {
-  open: { label: 'Normal access', tone: 'green' },
-  locked: { label: 'Locked', tone: 'blue' },
-  unknown: { label: 'Unknown, controller offline', tone: 'amber' },
-  unpaired: { label: 'No controller paired', tone: '' },
-  released: { label: 'Released, fire alarm', tone: 'red' },
-  'override-open': { label: 'Unlocked by override', tone: 'gold' },
-  'override-locked': { label: 'Locked by override', tone: 'plum' },
-  pending: { label: 'Waiting for controller', tone: '' },
-}
-
-const StateIcon = ({ s }: { s: DoorState }) =>
-  s === 'released' ? <Flame size={15} /> : s === 'unknown' || s === 'unpaired' ? <HelpCircle size={15} /> : s === 'open' || s === 'override-open' ? <LockOpen size={15} /> : s === 'pending' ? <Clock size={15} /> : <Lock size={15} />
-
 export default function Doors() {
   const { state, update, toast, audit } = useDemo()
   const [sim, setSim] = useState(START_MIN)
@@ -63,7 +49,6 @@ export default function Doors() {
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const [overrideFor, setOverrideFor] = useState<Door | null>(null)
   const [addEx, setAddEx] = useState(false)
-  const [fireB, setFireB] = useState(buildings[1].id)
   const simRef = useRef(sim)
   simRef.current = sim
 
@@ -95,7 +80,6 @@ export default function Doors() {
   const inWindow = (s: DoorSchedule, m: number) => s.days.includes(DAY) && m >= toMin(s.unlock) && m < toMin(s.lock)
 
   const doorState = (d: Door): DoorState => {
-    if (state.fireAlarm.includes(d.space.buildingId)) return 'released'
     if (d.controller === 'Not paired') return 'unpaired'
     if (d.controller !== 'Online') return 'unknown'
     const o = state.doorOverrides[d.id]
@@ -137,10 +121,10 @@ export default function Doors() {
     }, 250)
     return () => clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, speed, allSchedules, state.doorOverrides, doors, state.fireAlarm])
+  }, [running, speed, allSchedules, state.doorOverrides, doors])
 
   const boundary = (s: DoorSchedule, kind: 'unlock' | 'lock', at: number) => {
-    const targets = doors.filter((d) => d.scheduleId === s.id && !state.fireAlarm.includes(d.space.buildingId) && !(state.doorOverrides[d.id]?.untilMin > at))
+    const targets = doors.filter((d) => d.scheduleId === s.id && !(state.doorOverrides[d.id]?.untilMin > at))
     if (targets.length === 0) return
     const ok = targets.filter((d) => d.controller === 'Online')
     const bad = targets.filter((d) => d.controller !== 'Online')
@@ -168,7 +152,6 @@ export default function Doors() {
     return acc
   }, {})
   const overrides = doors.filter((d) => state.doorOverrides[d.id]?.untilMin > sim).length
-  const fireOn = state.fireAlarm.length > 0
 
   const setSchedule = (d: Door, id: string) => {
     if (id === d.scheduleId) return
@@ -192,19 +175,11 @@ export default function Doors() {
     toast(`${d.space.name} is back on its schedule.`)
   }
 
-  const fire = (on: boolean) => {
-    const b = buildings.find((x) => x.id === fireB)!
-    update((s) => ({ ...s, fireAlarm: on ? [...new Set([...s.fireAlarm, fireB])] : s.fireAlarm.filter((x) => x !== fireB) }))
-    audit({ actor: on ? 'Fire alarm panel' : 'Prof. Dr. Lim Mei Ling', area: 'Doors', action: on ? 'Fire alarm released doors' : 'Fire alarm cleared', target: b.name })
-    addEvent(fmt(sim), on ? `Fire alarm in ${b.name}: all doors released for evacuation. Schedules and overrides suspended.` : `Fire alarm cleared in ${b.name}. Doors return to their schedules.`, on ? 'bad' : 'ok')
-    toast(on ? `Fire alarm test: every door in ${b.name} released.` : `Fire alarm cleared in ${b.name}.`, on ? 'warn' : 'ok')
-  }
-
   return (
     <>
       <PageHead
         title="Door schedules"
-        sub="Doors switch to normal access at opening time and lock at closing time through the access-control system. Fire and emergency systems always take priority."
+        sub="Doors switch to normal access at opening time and lock at closing time through the access-control system. Emergency systems always take priority."
         actions={
           <button className="btn" onClick={() => setAddEx(true)}>
             <Plus size={16} /> Add exception
@@ -212,13 +187,6 @@ export default function Doors() {
         }
       />
 
-      {fireOn && (
-        <div className="fire-banner" role="alert">
-          <Flame size={18} />
-          <strong>Fire alarm active in {state.fireAlarm.map((id) => buildings.find((b) => b.id === id)?.name).join(', ')}.</strong>
-          <span>Doors are released for evacuation. Schedules and overrides are suspended there.</span>
-        </div>
-      )}
 
       <Panel className="clock-panel" bodyClass="panel-body">
         <div className="clock-row">
@@ -291,7 +259,6 @@ export default function Doors() {
               <tr>
                 <th>Door</th>
                 <th>Schedule</th>
-                <th>Now</th>
                 <th>Controller</th>
                 <th />
               </tr>
@@ -307,6 +274,11 @@ export default function Doors() {
                       <div className="xs muted">
                         {d.id}, {buildings.find((b) => b.id === d.space.buildingId)?.short}
                       </div>
+                      {o && o.untilMin > sim && (
+                        <div className="xs c-gold mt-1">
+                          {o.locked ? 'Locked' : 'Unlocked'} by override until {fmt(o.untilMin)}: {o.reason}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <select className="select sm" style={{ minWidth: 150 }} value={d.scheduleId} onChange={(e) => setSchedule(d, e.target.value)} aria-label={`Schedule for ${d.space.name}`}>
@@ -322,12 +294,6 @@ export default function Doors() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ minWidth: 170 }}>
-                      <Badge tone={stateInfo[st].tone}>
-                        <StateIcon s={st} /> {stateInfo[st].label}
-                      </Badge>
-                      {o && o.untilMin > sim && <div className="xs muted mt-1">Until {fmt(o.untilMin)}: {o.reason}</div>}
-                    </td>
                     <td>
                       <Badge tone={d.controller === 'Online' ? 'green' : d.controller === 'Not paired' ? '' : 'red'}>{d.controller}</Badge>
                     </td>
@@ -337,7 +303,7 @@ export default function Doors() {
                           End override
                         </button>
                       ) : (
-                        <button className="btn xs secondary" onClick={() => setOverrideFor(d)} disabled={st === 'released' || d.controller !== 'Online'} title={d.controller !== 'Online' ? 'Controller offline' : undefined}>
+                        <button className="btn xs secondary" onClick={() => setOverrideFor(d)} disabled={d.controller !== 'Online'} title={d.controller !== 'Online' ? 'Controller offline' : undefined}>
                           Override
                         </button>
                       )}
@@ -351,30 +317,6 @@ export default function Doors() {
 
         <div className="stack">
           <SchedulesPanel />
-          <Panel title="Fire alarm test" sub="Safety always takes priority over schedules">
-            <div className="field">
-              <label htmlFor="fire-b">Building</label>
-              <select id="fire-b" className="select" value={fireB} onChange={(e) => setFireB(e.target.value)}>
-                {buildings.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="row wrap" style={{ gap: 8 }}>
-              {state.fireAlarm.includes(fireB) ? (
-                <button className="btn success sm" onClick={() => fire(false)}>
-                  <ShieldCheck size={15} /> Clear the alarm
-                </button>
-              ) : (
-                <button className="btn danger sm" onClick={() => fire(true)}>
-                  <Flame size={15} /> Simulate fire alarm
-                </button>
-              )}
-            </div>
-            <p className="xs muted mt-1">In a real alarm the fire panel releases the doors locally. The platform only shows it and never blocks it.</p>
-          </Panel>
           <Panel title="Holidays and exceptions" sub="Approved changes to the normal schedule" bodyClass="panel-body tight">
             <div className="list">
               {state.doorExceptions.map((x) => (
@@ -408,7 +350,7 @@ export default function Doors() {
         </div>
       </div>
       <div className="mt-2">
-        <Notice>Simulation only. In production the platform sends schedule requests to the university access-control system and shows each door’s state only after the controller confirms it. Manual keys, emergency exits and fire release are never blocked.</Notice>
+        <Notice>Simulation only. In production the platform sends schedule requests to the university access-control system and shows each door’s state only after the controller confirms it. Manual keys and emergency exits are never blocked.</Notice>
       </div>
 
       {overrideFor && (
@@ -477,7 +419,7 @@ function OverrideModal({ door, sched, now, onClose, onDone }: { door: Door; sche
         <label htmlFor="ovr-r">Reason</label>
         <input id="ovr-r" className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Guest lecture runs until 17:45" />
       </div>
-      <p className="xs muted">Overrides end automatically. Fire alarms and emergency release always take priority.</p>
+      <p className="xs muted">Overrides end automatically. Emergency exits always stay in local control.</p>
     </Modal>
   )
 }
@@ -529,14 +471,31 @@ function SchedulesPanel() {
   )
 }
 
+const DEMO_TODAY = '2026-10-21'
+const isoDate = (iso: string) => new Date(`${iso}T00:00:00Z`)
+const fmtIso = (iso: string, opts: Intl.DateTimeFormatOptions) => isoDate(iso).toLocaleDateString('en-GB', { ...opts, timeZone: 'UTC' })
+
+/** "Mon 9 Nov 2026" for one day, "26 Oct to 1 Nov 2026" for a range. */
+function describeDates(kind: 'single' | 'range', from: string, to: string) {
+  if (kind === 'single' || from === to) return fmtIso(from, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(',', '')
+  const sameYear = from.slice(0, 4) === to.slice(0, 4)
+  return `${fmtIso(from, sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' })} to ${fmtIso(to, { day: 'numeric', month: 'short', year: 'numeric' })}`
+}
+
 function ExceptionModal({ onClose }: { onClose: () => void }) {
   const { update, toast, audit } = useDemo()
   const [name, setName] = useState('')
-  const [dates, setDates] = useState('')
+  const [kind, setKind] = useState<'single' | 'range'>('single')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const rangeBad = kind === 'range' && !!from && !!to && to < from
+  const days = kind === 'range' && from && to && !rangeBad ? Math.round((isoDate(to).getTime() - isoDate(from).getTime()) / 86400000) + 1 : 1
+  const dates = from && (kind === 'single' || (to && !rangeBad)) ? describeDates(kind, from, to) : ''
   const [scope, setScope] = useState('All doors')
   const [behaviour, setBehaviour] = useState('Stay locked all day')
   const save = () => {
-    if (!name.trim() || !dates.trim()) return toast('Add a name and the dates.', 'warn')
+    if (rangeBad) return toast('The end date must be on or after the start date.', 'warn')
+    if (!name.trim() || !dates) return toast(kind === 'range' ? 'Add a name and pick the start and end dates.' : 'Add a name and pick the date.', 'warn')
     update((s) => ({ ...s, doorExceptions: [{ id: `ex${Date.now()}`, name: name.trim(), dates: dates.trim(), scope, behaviour, approvedBy: 'Prof. Dr. Lim Mei Ling' }, ...s.doorExceptions] }))
     audit({ area: 'Doors', action: 'Added schedule exception', target: name.trim(), detail: `${dates.trim()}, ${scope}, ${behaviour}` })
     toast(`Exception "${name.trim()}" added and approved.`)
@@ -564,8 +523,45 @@ function ExceptionModal({ onClose }: { onClose: () => void }) {
         <input id="ex-n" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Public holiday" />
       </div>
       <div className="field">
-        <label htmlFor="ex-d">Dates</label>
-        <input id="ex-d" className="input" value={dates} onChange={(e) => setDates(e.target.value)} placeholder="e.g. Mon 9 Nov 2026" />
+        <div className="row between wrap" style={{ gap: 8, marginBottom: 6 }}>
+          <label htmlFor="ex-from" style={{ margin: 0 }}>
+            Dates
+          </label>
+          <Seg
+            value={kind}
+            onChange={(v) => {
+              setKind(v)
+              if (v === 'single') setTo('')
+            }}
+            options={[
+              { id: 'single', label: 'Single day' },
+              { id: 'range', label: 'Date range' },
+            ]}
+          />
+        </div>
+        <div className={`ex-dates ${kind}`}>
+          <label className="ex-date">
+            <span>{kind === 'range' ? 'From' : 'Date'}</span>
+            <input
+              id="ex-from"
+              className="input"
+              type="date"
+              min={DEMO_TODAY}
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value)
+                if (to && e.target.value > to) setTo(e.target.value)
+              }}
+            />
+          </label>
+          {kind === 'range' && (
+            <label className="ex-date">
+              <span>To</span>
+              <input className="input" type="date" min={from || DEMO_TODAY} value={to} onChange={(e) => setTo(e.target.value)} />
+            </label>
+          )}
+        </div>
+        <p className={`xs mt-1 ${rangeBad ? 'c-red' : 'muted'}`}>{rangeBad ? 'The end date must be on or after the start date.' : dates ? `${dates}${kind === 'range' ? `, ${days} day${days > 1 ? 's' : ''}` : ''}` : kind === 'range' ? 'Pick the first and last day.' : 'Pick the day.'}</p>
       </div>
       <div className="grid g-2" style={{ gap: 12 }}>
         <div className="field">

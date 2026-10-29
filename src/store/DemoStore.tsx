@@ -64,7 +64,6 @@ interface DemoState {
   doorAssign: Record<string, string>
   doorExceptions: DoorException[]
   doorOverrides: Record<string, DoorOverride>
-  fireAlarm: string[]
   autoRules: AutoRule[]
   autoLog: AutoOutcome[]
   // Review 2: door timers set per room in Smart rooms (door id -> times)
@@ -137,7 +136,6 @@ const initialState = (): DemoState => ({
   doorAssign: {},
   doorExceptions: seedDoorExceptions,
   doorOverrides: {},
-  fireAlarm: [],
   autoRules: seedAutoRules,
   autoLog: seedAutoLog,
   // Example from the review: classroom DK1 unlocks at 08:00 and locks at 18:00 on weekdays.

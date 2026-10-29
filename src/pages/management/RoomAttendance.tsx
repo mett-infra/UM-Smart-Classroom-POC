@@ -321,8 +321,6 @@ function RoomDay({ room, date, dates, now, onDate }: { room: Space; date: string
                       <th>Programme or position</th>
                       {showSession && <th>Session</th>}
                       <th>Time in room</th>
-                      <th>Checked in by</th>
-                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -351,10 +349,6 @@ function RoomDay({ room, date, dates, now, onDate }: { room: Space; date: string
                         {showSession && <td className="small">{s.code === 'Event' || s.code === 'Duty' ? s.title : `${s.code}, ${s.start}`}</td>}
                         <td className="num small nowrap">
                           {fmtMin(v.inMin)} to {v.outMin === null ? <Badge tone="green">In room</Badge> : fmtMin(v.outMin)}
-                        </td>
-                        <td className="small nowrap">{v.method}</td>
-                        <td>
-                          <Badge tone={statusTone[v.status]}>{v.status}</Badge>
                         </td>
                       </tr>
                     ))}

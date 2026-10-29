@@ -41,7 +41,7 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - Saved demo data moved to a new storage key, so every browser starts from the new sample data.
 
 ### Day 2: Management (part 2)
-- **Door schedules** (`/management/doors`): a simulated campus clock (play, pause, fast-forward) drives door schedules. Teaching rooms open at 08:00 and lock at 17:00 (editable), labs 08:30 to 18:00, auditoriums 07:30 to 22:00. At each boundary the request goes to the controllers and the state shows only once confirmed; offline controllers show as unknown, never as locked. Manual overrides with reason and expiry, holiday exceptions, schedule per door, event log, and a fire alarm test that releases every door in a building.
+- **Door schedules** (`/management/doors`): a simulated campus clock (play, pause, fast-forward) drives door schedules. Teaching rooms open at 08:00 and lock at 17:00 (editable), labs 08:30 to 18:00, auditoriums 07:30 to 22:00. At each boundary the request goes to the controllers and the state shows only once confirmed; offline controllers show as unknown, never as locked. Manual overrides with reason and expiry, holiday exceptions, schedule per door and an event log.
 - **Automation** (`/management/automation`): inactivity rules by room type (after 5, 10, 15 or 30 minutes empty) with the devices each rule switches off. Door, camera, sensor, microphone, network and safety equipment is never switched off. A live simulation shows a room emptying, the countdown, and the automatic switch-off, with a history log.
 - **Voice commands**: microphone button in the management top bar and in each Smart room. Works by voice in Chrome and Edge (English or Bahasa Melayu) or by typing. Only approved commands run, the room must be clear, shutting down a room asks for confirmation, and every command is logged.
 - Demo tip: on Door schedules click **Watch the 17:00 lock**. On Automation pick a room, click **Everyone leaves** at 60x speed.
@@ -56,6 +56,12 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - **Face sign-up** (`/management/faces`): the face database for this proof of concept holds one demo participant, Pranav Kuri. Sign-up wizard: consent, photo upload or camera, an on-device check (face found, only one face, clear and large enough), then a face template is saved. **Test recognition** runs the 15-second scan used for live-session attendance and shows the match and its confidence (75% or more needed).
 - Face recognition is real and runs in the browser with the open-source face-api library (models in `public/models`, about 7 MB, loaded only on this page). **Photos and face templates are stored in that browser only**, never in this repository or on the website. Sign people up on the demo laptop before presenting. Reset demo data does not remove them; use Remove on the page.
 - The camera needs a secure address: the GitHub Pages site (https) or `localhost`.
+
+### Review 3 changes (management)
+- **Live operations:** every class has an **Observe** button. Online classes open a view-only class stream.
+- **Attendance:** the people table shows person, programme, session and time in room (the "Checked in by" and "Status" columns are removed; the CSV export still includes them).
+- **Face sign-up:** a note under the face database says the option is for demo purposes only, and the production workflow will follow the Universiti PIC's feedback.
+- **Door schedules:** the fire alarm test is removed, the doors table no longer has the "Now" column (the counts at the top still show the state), and **Add exception** has a date picker for a single day or a date range.
 
 ## Suggested demo path (about 10 minutes)
 

@@ -425,7 +425,7 @@ function DoorPanel({ room, door, locked, onLock }: { room: Space; door?: Device;
           </div>
         </div>
         <p className="xs muted" style={{ marginTop: 8 }}>
-          The timer also shows on <Link to="/management/doors">Door schedules</Link>. Fire alarms always release the door.
+          The timer also shows on <Link to="/management/doors">Door schedules</Link>.
         </p>
       </div>
     </Panel>
