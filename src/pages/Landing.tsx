@@ -33,7 +33,7 @@ const roles: { role: Role; label: string; icon: ReactElement; color: string; tin
     icon: <BookOpen size={18} />,
     color: 'var(--role-lecturer)',
     tint: 'var(--teal-50)',
-    points: ['Run the class: slides, whiteboard, polls, breakout rooms', 'Take attendance with a rotating QR check-in', 'Mark submissions in the gradebook', 'Turn a lecture transcript into a quiz'],
+    points: ['Run the class: slides, whiteboard, polls, breakout rooms', 'Take attendance with face recognition, and mark anyone the camera misses', 'Share materials and assessments week by week', 'Turn a lecture transcript into a quiz'],
   },
   {
     role: 'management',

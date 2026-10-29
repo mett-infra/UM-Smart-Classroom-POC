@@ -367,6 +367,14 @@ function cohort(code: string, fac: Fac, year: number, size: number): Person[] {
   return list
 }
 
+/** Everyone enrolled in a course, as used for the room timetables. */
+export function cohortFor(code: string): Person[] {
+  const slot = Object.values(SLOTS)
+    .flat()
+    .find((s) => s.code === code && s.kind !== 'Lab')
+  return slot ? cohort(slot.code, slot.fac, slot.year, slot.size) : []
+}
+
 /** Pick exactly n people, favouring the ones who attend reliably (weighted sampling). */
 function choose(r: () => number, from: Person[], n: number) {
   return from
@@ -381,7 +389,8 @@ const hasCamera = (roomId: string) => !!seedSpaces.find((s) => s.id === roomId)?
 function methodFor(r: () => number, roomId: string, kind: Kind): Method {
   if (kind === 'Event') return r() < 0.8 ? 'Event ticket' : 'Card tap'
   const x = r()
-  if (hasCamera(roomId)) return x < 0.82 ? 'Face recognition' : x < 0.95 ? 'Card tap' : 'Added by lecturer'
+  // Rooms with a camera: face recognition, and the lecturer marks anyone the camera misses.
+  if (hasCamera(roomId)) return x < 0.86 ? 'Face recognition' : 'Added by lecturer'
   return x < 0.78 ? 'Card tap' : x < 0.96 ? 'QR check-in' : 'Added by lecturer'
 }
 

@@ -250,7 +250,6 @@ export default function LecturerCourse() {
                     <th>Submitted</th>
                     <th className="num">Marked</th>
                     <th>Status</th>
-                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -274,11 +273,6 @@ export default function LecturerCourse() {
                         <td className="num">{marked}</td>
                         <td>
                           <Badge tone={a.status === 'Graded' ? 'green' : a.submitted > marked ? 'amber' : 'blue'}>{a.status === 'Graded' ? 'Marks released' : a.submitted > marked ? 'Marking' : 'Open'}</Badge>
-                        </td>
-                        <td>
-                          <Link className="btn secondary xs" to="/lecturer/gradebook">
-                            Mark
-                          </Link>
                         </td>
                       </tr>
                     )

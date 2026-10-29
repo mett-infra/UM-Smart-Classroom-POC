@@ -361,3 +361,127 @@
     font-size: 18px;
   }
 }
+
+/* Attendance: face recognition plus manual marks */
+.att-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.att-banner > svg {
+  flex-shrink: 0;
+}
+
+.att-banner .grow {
+  min-width: 220px;
+}
+
+.att-banner strong {
+  color: var(--ink);
+}
+
+.att-banner.info {
+  background: var(--primary-50);
+  border-color: var(--primary-100);
+}
+
+.att-banner.info > svg {
+  color: var(--primary);
+}
+
+.att-banner.warn {
+  background: var(--amber-50);
+  border-color: #f1d9a6;
+}
+
+.att-banner.warn > svg {
+  color: var(--amber);
+}
+
+.att-banner.ok {
+  background: var(--green-50);
+  border-color: #c7e8d8;
+}
+
+.att-banner.ok > svg {
+  color: var(--green);
+}
+
+.lat-tools {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0 20px 12px;
+}
+
+.lat-tools .search-field {
+  flex: 1;
+  min-width: 200px;
+}
+
+.lat-bulk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 20px 12px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--primary-50);
+  border: 1px solid var(--primary-100);
+}
+
+.lat-table input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+}
+
+.lat-table tr.lat-demo td {
+  background: var(--gold-50);
+}
+
+.face-thumb.sm {
+  width: 32px;
+  height: 32px;
+}
+
+.room-scan img {
+  filter: saturate(0.85);
+}
+
+.room-scan-count {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(13, 21, 48, 0.75);
+  color: #fff;
+  font-size: 13px;
+}
+
+.room-scan-count strong {
+  font-size: 16px;
+  color: #4be3a2;
+}
+
+@media (max-width: 640px) {
+  .lat-table .col-rate {
+    display: none;
+  }
+  .lat-tools {
+    padding: 0 14px 12px;
+  }
+}

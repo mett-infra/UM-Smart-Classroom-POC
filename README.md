@@ -63,6 +63,13 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - **Face sign-up:** a note under the face database says the option is for demo purposes only, and the production workflow will follow the Universiti PIC's feedback.
 - **Door schedules:** the fire alarm test is removed, the doors table no longer has the "Now" column (the counts at the top still show the state), and **Add exception** has a date picker for a single day or a date range.
 
+### Lecturer changes (before Day 4)
+- **Gradebook** and **Teaching timetable** are removed from the lecturer portal (the university uses another system for these).
+- **Attendance** has two options per student: **Present** or **Absent** (no "Late").
+  - **Face recognition:** **Start face scan** runs a 15-second scan of the room camera; recognised students are marked present automatically. **Scan with this device** uses this device's camera and the Face sign-up database (Pranav Kuri, the demo participant, appears in today's class list).
+  - **Marked by the lecturer:** anyone the camera misses can be marked present, one by one or by selecting several. A banner compares the people counter with the number marked present, for example "85 in the room, 68 marked present: 17 not recognised".
+  - Past sessions show who was recognised and who was marked by the lecturer. Export CSV includes how and when each student was marked.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.
@@ -70,7 +77,7 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 3. **Student**: My courses, WIA2004, week 7 content. Assignments, open Assignment 2, attach a file, submit.
 4. **Student**: AI study assistant, ask for flashcards.
 5. **Lecturer**: home, open live class. Switch to whiteboard and draw, start recording, launch a poll, open breakout rooms, end class and publish the recording.
-6. **Lecturer**: attendance with the check-in code, gradebook (enter marks, release), AI teaching assistant (generate a quiz).
+6. **Lecturer**: Attendance, start the face scan, then mark the students the camera missed. AI teaching assistant (generate a quiz).
 7. **Management**: overview, live operations, academic performance, smart rooms (turn equipment on and off), maintenance (report and resolve a ticket), reports (generate and download).
 
 ## Run locally

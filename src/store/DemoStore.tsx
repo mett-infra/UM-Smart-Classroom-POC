@@ -45,7 +45,9 @@ interface DemoState {
   tickets: Ticket[]
   rooms: Room[]
   roomControls: Record<string, RoomControls>
-  attendance: Record<string, Record<string, 'present' | 'late' | 'absent'>>
+  // Lecturer attendance: changes on top of the camera records (session id -> person id -> mark)
+  lecAttendance: Record<string, Record<string, AttMark>>
+  attScans: Record<string, { at: string; recognised: number }>
   marks: Record<string, Record<string, number>> // assignmentId -> studentId -> mark
   activity: ActivityItem[]
   readNotifications: string[]
@@ -76,6 +78,12 @@ export interface DoorTimer {
   days: number[] // 1 Mon .. 5 Fri, 6 Sat, 0 Sun
 }
 
+export interface AttMark {
+  s: 'present' | 'absent'
+  by: 'camera' | 'lecturer'
+  at: string
+}
+
 export interface DoorOverride {
   locked: boolean
   untilMin: number // minutes since midnight on the demo day
@@ -94,14 +102,6 @@ function seedMarks() {
   return { a1 }
 }
 
-function seedAttendance() {
-  const rec: Record<string, 'present' | 'late' | 'absent'> = {}
-  roster.forEach((s, i) => {
-    rec[s.id] = s.attendance < 65 && i % 2 === 0 ? 'absent' : i % 11 === 5 ? 'late' : 'present'
-  })
-  return { 's-wia2004-14': rec }
-}
-
 const initialState = (): DemoState => ({
   assignments: seedAssignments,
   submissionFiles: { a3: ['aina_lab5_airquality.ipynb'] },
@@ -114,7 +114,8 @@ const initialState = (): DemoState => ({
     rm1: { display: true, audio: true, lights: true, camera: true, mode: 'Hybrid' },
     rm5: { display: true, audio: true, lights: false, camera: true, mode: 'Teaching' },
   },
-  attendance: seedAttendance(),
+  lecAttendance: {},
+  attScans: {},
   marks: seedMarks(),
   activity: [
     { id: 'ac1', text: 'WIA2004 Lecture 14 went live', sub: 'DK2, FSKTM, hybrid, 126 joined', time: '10:00', kind: 'live' },

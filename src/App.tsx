@@ -20,7 +20,6 @@ import LecturerHome from './pages/lecturer/LecturerHome'
 import LecturerCourses from './pages/lecturer/LecturerCourses'
 import LecturerCourse from './pages/lecturer/LecturerCourse'
 import Attendance from './pages/lecturer/Attendance'
-import Gradebook from './pages/lecturer/Gradebook'
 import Insights from './pages/lecturer/Insights'
 import TeachingAssistant from './pages/lecturer/TeachingAssistant'
 
@@ -64,9 +63,7 @@ export default function App() {
           <Route index element={<LecturerHome />} />
           <Route path="courses" element={<LecturerCourses />} />
           <Route path="courses/:courseId" element={<LecturerCourse />} />
-          <Route path="timetable" element={<Timetable role="lecturer" />} />
           <Route path="attendance" element={<Attendance />} />
-          <Route path="gradebook" element={<Gradebook />} />
           <Route path="insights" element={<Insights />} />
           <Route path="assistant" element={<TeachingAssistant />} />
           <Route path="announcements" element={<Announcements role="lecturer" />} />

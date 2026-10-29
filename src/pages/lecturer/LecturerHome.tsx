@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ClipboardCheck, FileUp, Megaphone, Radio, Upload, Users, Wrench } from 'lucide-react'
-import { PageHead, Panel, Badge, LiveBadge, Avatar, Metric, Bar, riskTone, fmtDue, daysLeft } from '../../components/ui'
+import { AlertTriangle, CheckCircle2, FileUp, Megaphone, Radio, ScanFace, Upload, UserCheck, Users, Wrench } from 'lucide-react'
+import { PageHead, Panel, Badge, LiveBadge, Avatar, Metric, Bar, riskTone, daysLeft } from '../../components/ui'
 import { courseById, courses, lecturerCourseIds, liveSessionId, personas, roster, sessions, TEACHING_WEEK } from '../../data/mock'
-import { useDemo, type ActivityItem } from '../../store/DemoStore'
+import { demoMinutes, useDemo, type ActivityItem } from '../../store/DemoStore'
+import { classList, effectiveMarks, inRoom, lecSessions } from './attendanceData'
 import '../../styles/lecturer.css'
 
 const activityIcon: Record<ActivityItem['kind'], ReactNode> = {
@@ -24,35 +25,35 @@ export default function LecturerHome() {
   const myCourses = courses.filter((c) => lecturerCourseIds.includes(c.id))
   const taught = myCourses.reduce((n, c) => n + c.enrolled, 0)
   const avgAttendance = Math.round(myCourses.reduce((n, c) => n + c.attendance, 0) / myCourses.length)
-  const marked = Object.keys(state.marks.a1 ?? {}).length
   const a1 = state.assignments.find((a) => a.id === 'a1')
-  const toGradeA1 = Math.max(0, (a1?.submitted ?? 0) - marked)
   const atRisk = roster.filter((s) => s.risk !== 'Low')
   const live = sessions.find((s) => s.id === liveSessionId)!
   const liveCourse = courseById(live.courseId)!
   const today = sessions.filter((s) => lecturerCourseIds.includes(s.courseId))
 
-  const queue = state.assignments
-    .filter((a) => lecturerCourseIds.includes(a.courseId) && a.submitted > a.graded)
-    .map((a) => {
-      const pending = a.id === 'a1' ? toGradeA1 : a.submitted - a.graded
-      return { a, pending }
-    })
-    .filter((x) => x.pending > 0)
-  const totalToGrade = queue.reduce((n, q) => n + q.pending, 0)
+  // Today's attendance for the live session (face recognition plus manual marks)
+  const now = demoMinutes()
+  const todaySess = lecSessions[0]
+  const people = classList(todaySess)
+  const marks = effectiveMarks(todaySess, now, state.lecAttendance[todaySess.id])
+  const present = people.filter((x) => marks[x.id]?.s === 'present')
+  const byFace = present.filter((x) => marks[x.id].by === 'camera').length
+  const counter = inRoom(todaySess, now).length
+  const scanned = !!state.attScans[todaySess.id]
+  const presentStudents = present.filter((x) => !x.id.startsWith('fp-')).length
 
   return (
     <>
       <PageHead
         title={`Good morning, ${p.short}`}
-        sub={`You have ${today.length} sessions today and ${totalToGrade} submissions waiting for marks. Teaching week ${TEACHING_WEEK}.`}
+        sub={`You have ${today.length} sessions today. Teaching week ${TEACHING_WEEK}.`}
         actions={
           <>
             <Link className="btn secondary" to="/lecturer/announcements">
               <Megaphone size={16} /> Post announcement
             </Link>
-            <Link className="btn" to="/lecturer/gradebook">
-              <ClipboardCheck size={16} /> Open gradebook
+            <Link className="btn" to="/lecturer/attendance">
+              <UserCheck size={16} /> Take attendance
             </Link>
           </>
         }
@@ -75,7 +76,7 @@ export default function LecturerHome() {
 
       <div className="metrics">
         <Metric label="Students taught" value={taught} foot={`Across ${myCourses.length} courses this semester`} />
-        <Metric label="Submissions to mark" value={totalToGrade} foot={<>Assignment 2 has {toGradeA1} waiting</>} />
+        <Metric label="Present in today’s lecture" value={present.length} foot={scanned ? `${byFace} by face recognition, ${present.length - byFace} marked by you` : 'Face scan not run yet'} />
         <Metric label="Average attendance" value={avgAttendance} unit="%" foot={<><span className="delta-down">1 pt lower</span> than last week</>} />
         <Metric label="Students needing support" value={atRisk.length} foot={`${atRisk.filter((s) => s.risk === 'High').length} high, ${atRisk.filter((s) => s.risk === 'Medium').length} medium in WIA2004`} />
       </div>
@@ -127,38 +128,41 @@ export default function LecturerHome() {
           </Panel>
 
           <Panel
-            title="Marking queue"
-            sub="Submissions waiting for your marks"
+            title="Attendance today"
+            sub={`${todaySess.code} ${todaySess.label}, ${todaySess.room}`}
             action={
-              <Link className="link-btn" to="/lecturer/gradebook">
-                Open gradebook
+              <Link className="link-btn" to="/lecturer/attendance">
+                Open attendance
               </Link>
             }
-            bodyClass="panel-body tight"
           >
-            <div className="list">
-              {queue.map(({ a, pending }) => {
-                const c = courseById(a.courseId)!
-                const pct = a.submitted ? Math.round(((a.submitted - pending) / a.submitted) * 100) : 0
-                return (
-                  <div key={a.id} className="list-item clickable" onClick={() => nav('/lecturer/gradebook')}>
-                    <div className="icon-tile" style={{ background: c.color + '18', color: c.color }}>
-                      <ClipboardCheck size={18} />
-                    </div>
-                    <div className="grow">
-                      <div className="title truncate">{a.title}</div>
-                      <div className="sub">
-                        {c.code}, {a.submitted} of {c.enrolled} submitted, {fmtDue(a.due)}
-                      </div>
-                      <div style={{ maxWidth: 260, marginTop: 6 }}>
-                        <Bar value={pct} thin color={c.color} />
-                      </div>
-                    </div>
-                    <Badge tone="amber">{pending} to mark</Badge>
-                  </div>
-                )
-              })}
+            <div className="att-chips" style={{ marginBottom: 12 }}>
+              <div className="att-chip">
+                <strong>{present.length}</strong> present of {people.length}
+              </div>
+              <div className="att-chip">
+                <strong>{byFace}</strong> by face recognition
+              </div>
+              <div className="att-chip">
+                <strong>{present.length - byFace}</strong> marked by you
+              </div>
+              <div className="att-chip">
+                <strong>{counter}</strong> in the room now
+              </div>
             </div>
+            <Bar value={Math.round((present.length / people.length) * 100)} color="var(--teal)" />
+            <p className="small muted" style={{ marginTop: 10 }}>
+              {scanned
+                ? counter > presentStudents
+                  ? `${counter - presentStudents} people in the room are not marked yet. Mark them present in Attendance.`
+                  : 'Everyone counted in the room is marked present.'
+                : 'Run a face scan to mark the students in the room present, then mark anyone the camera misses.'}
+            </p>
+            {!scanned && (
+              <Link className="btn sm" to="/lecturer/attendance">
+                <ScanFace size={15} /> Start face scan
+              </Link>
+            )}
           </Panel>
         </div>
 

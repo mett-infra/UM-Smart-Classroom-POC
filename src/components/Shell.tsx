@@ -16,7 +16,6 @@ import {
   Radio,
   Search,
   Sparkles,
-  Table2,
   Wrench,
   PlayCircle,
   Briefcase,
@@ -93,14 +92,12 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
           { to: '/lecturer', label: 'Home', icon: <Home size={s} />, end: true },
           { to: `/lecturer/live/${liveSessionId}`, label: 'Live class', icon: <Radio size={s} />, live: true },
           { to: '/lecturer/courses', label: 'My courses', icon: <BookOpen size={s} /> },
-          { to: '/lecturer/timetable', label: 'Teaching timetable', icon: <CalendarDays size={s} /> },
           { to: '/lecturer/attendance', label: 'Attendance', icon: <UserRound size={s} /> },
         ],
       },
       {
         heading: 'Assessment and insight',
         items: [
-          { to: '/lecturer/gradebook', label: 'Gradebook', icon: <Table2 size={s} /> },
           { to: '/lecturer/insights', label: 'Class insights', icon: <BarChart3 size={s} /> },
           { to: '/lecturer/assistant', label: 'AI teaching assistant', icon: <Sparkles size={s} /> },
           { to: '/lecturer/announcements', label: 'Announcements', icon: <Megaphone size={s} /> },
