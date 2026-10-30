@@ -70,13 +70,18 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
   - **Marked by the lecturer:** anyone the camera misses can be marked present, one by one or by selecting several. A banner compares the people counter with the number marked present, for example "85 in the room, 68 marked present: 17 not recognised".
   - Past sessions show who was recognised and who was marked by the lecturer. Export CSV includes how and when each student was marked.
 
+### Day 4: Lecturer live class
+- **Attendance inside the live class** (lecturer, WIA2004 Lecture 14): a top-bar chip shows how many are present and pulses "Take attendance" until a face scan runs. The **Attendance** panel shows present, by face, by you and the people-counter count, with **Start face scan** (room camera, 15 seconds), **This device** (laptop camera, recognises Pranav after Face sign-up) and a quick **Mark present** list for anyone the camera missed. It shares the same records as the Attendance page.
+- **Room control in the live class:** a **Room** panel with On/Off for the DK2 devices and Lock/Unlock for the door, plus **Room voice** in the bottom bar for voice commands (for example "dim the lights to 30%", "switch off the fan", "tutup lampu").
+- The end-of-class summary shows how many were marked present by face recognition and by the lecturer, and warns if anyone counted in the hall is still not marked.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.
 2. **Student**: home, then **Join class**. Show chat, captions (switch EN/BM), raise hand, reactions. Wait about 15 seconds for the lecturer's poll and vote.
 3. **Student**: My courses, WIA2004, week 7 content. Assignments, open Assignment 2, attach a file, submit.
 4. **Student**: AI study assistant, ask for flashcards.
-5. **Lecturer**: home, open live class. Switch to whiteboard and draw, start recording, launch a poll, open breakout rooms, end class and publish the recording.
+5. **Lecturer**: home, open live class. Click the attendance chip, start the face scan, mark the students it missed, use Room voice to dim the lights. Then whiteboard, recording, poll, end class.
 6. **Lecturer**: Attendance, start the face scan, then mark the students the camera missed. AI teaching assistant (generate a quiz).
 7. **Management**: overview, live operations, academic performance, smart rooms (turn equipment on and off), maintenance (report and resolve a ticket), reports (generate and download).
 

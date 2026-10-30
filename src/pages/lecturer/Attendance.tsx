@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Download, Laptop, ScanFace, Search, UserCheck, Users } from 'lucide-react'
-import { PageHead, Panel, Badge, Avatar, Modal, Seg, Empty } from '../../components/ui'
+import { useState } from 'react'
+import { AlertTriangle, CheckCircle2, Download, Laptop, ScanFace, Search, UserCheck } from 'lucide-react'
+import { PageHead, Panel, Badge, Avatar, Seg, Empty } from '../../components/ui'
 import { FaceRecognitionModal, SCAN_SECONDS } from '../../components/FaceRecognitionModal'
 import { fmtDay } from '../../data/attendance'
-import { demoMinutes, nowLabel, useDemo, type AttMark } from '../../store/DemoStore'
+import { useDemo } from '../../store/DemoStore'
 import { useFaces } from '../../store/faces'
 import { downloadCsv } from './lecturerUtils'
-import { classList, effectiveMarks, inRoom, isToday, lecSessions, roomScan, semesterRates, type LecSession } from './attendanceData'
+import { classList, effectiveMarks, isToday, lecSessions, semesterRates } from './attendanceData'
+import { RoomScanModal } from './RoomScanModal'
+import { useLecAttendance, useNow } from './useLecAttendance'
 import '../../styles/lecturer.css'
 import '../../styles/smartcampus.css'
 
@@ -19,17 +21,8 @@ import '../../styles/smartcampus.css'
 
 type Filter = 'all' | 'present' | 'absent' | 'manual'
 
-function useNow() {
-  const [now, setNow] = useState(demoMinutes())
-  useEffect(() => {
-    const id = setInterval(() => setNow(demoMinutes()), 15000)
-    return () => clearInterval(id)
-  }, [])
-  return now
-}
-
 export default function Attendance() {
-  const { state, update, toast, log } = useDemo()
+  const { state, toast } = useDemo()
   const faces = useFaces()
   const now = useNow()
   const [sid, setSid] = useState(lecSessions[0].id)
@@ -39,18 +32,8 @@ export default function Attendance() {
   const [scanOpen, setScanOpen] = useState(false)
   const [deviceOpen, setDeviceOpen] = useState(false)
   const sess = lecSessions.find((s) => s.id === sid)!
-  const today = isToday(sess)
-  const people = useMemo(() => classList(sess), [sess])
-  const marks = effectiveMarks(sess, now, state.lecAttendance[sid])
+  const { people, marks, scan, counter, present, byCamera, byLecturer, presentStudents, gap, today, mark, markPresent, applyScan, applyDeviceMatch } = useLecAttendance(sess, now)
   const rates = semesterRates(sess, now)
-  const scan = state.attScans[sid]
-  const counter = today ? inRoom(sess, now).length : 0
-
-  const present = people.filter((p) => marks[p.id]?.s === 'present')
-  const byCamera = present.filter((p) => marks[p.id].by === 'camera').length
-  const byLecturer = present.length - byCamera
-  const presentStudents = present.filter((p) => !p.id.startsWith('fp-')).length
-  const gap = counter - presentStudents
 
   const list = people.filter((p) => {
     const m = marks[p.id]
@@ -58,35 +41,10 @@ export default function Attendance() {
     return okFilter && (!q || `${p.name} ${p.idNo}`.toLowerCase().includes(q.toLowerCase()))
   })
 
-  const setMarks = (ids: string[], mark: AttMark | null) =>
-    update((s) => {
-      const cur = { ...(s.lecAttendance[sid] ?? {}) }
-      ids.forEach((id) => {
-        if (mark) cur[id] = mark
-        else delete cur[id]
-      })
-      return { ...s, lecAttendance: { ...s.lecAttendance, [sid]: cur } }
-    })
-
-  const mark = (id: string, v: 'present' | 'absent') => {
-    if ((marks[id]?.s ?? 'absent') === v) return
-    setMarks([id], { s: v, by: 'lecturer', at: nowLabel() })
-  }
-
   const markPicked = () => {
-    const ids = [...picked].filter((id) => marks[id]?.s !== 'present')
-    if (!ids.length) return
-    setMarks(ids, { s: 'present', by: 'lecturer', at: nowLabel() })
-    toast(`${ids.length} student${ids.length > 1 ? 's' : ''} marked present by you.`)
-    log({ text: `Attendance updated for ${sess.code}`, sub: `${ids.length} marked present manually`, kind: 'room' })
+    const n = markPresent([...picked])
+    if (n) toast(`${n} student${n > 1 ? 's' : ''} marked present by you.`)
     setPicked(new Set())
-  }
-
-  const applyScan = (ids: string[], recognised: number) => {
-    const fresh = ids.filter((id) => !state.lecAttendance[sid]?.[id] || state.lecAttendance[sid][id].s !== 'present')
-    setMarks(fresh, { s: 'present', by: 'camera', at: nowLabel() })
-    update((s) => ({ ...s, attScans: { ...s.attScans, [sid]: { at: nowLabel(), recognised } } }))
-    log({ text: `Face scan in ${sess.room.split(',')[0]}`, sub: `${recognised} students recognised for ${sess.code}`, kind: 'room' })
   }
 
   const exportCsv = () => {
@@ -360,7 +318,7 @@ export default function Attendance() {
         <RoomScanModal
           session={sess}
           now={now}
-          onFinish={(ids) => applyScan(ids, ids.length)}
+          onFinish={(ids) => applyScan(ids)}
           onClose={() => setScanOpen(false)}
         />
       )}
@@ -369,116 +327,9 @@ export default function Attendance() {
           title="Scan with this device"
           sub={`Look at this device's camera for ${SCAN_SECONDS} seconds. A recognised student is marked present for ${sess.code}.`}
           onClose={() => setDeviceOpen(false)}
-          onMatch={(id) => {
-            if (!classList(sess).some((p) => p.id === id)) return
-            setMarks([id], { s: 'present', by: 'camera', at: nowLabel() })
-            log({ text: `Face recognised for ${sess.code}`, sub: `${classList(sess).find((p) => p.id === id)?.name} marked present`, kind: 'room' })
-          }}
+          onMatch={(id) => applyDeviceMatch(id)}
         />
       )}
     </>
-  )
-}
-
-// ---------- room camera scan (simulated room camera, 15 seconds) ----------
-const STAGES: [number, string][] = [
-  [0, 'Looking for faces'],
-  [3, 'Reading facial features'],
-  [7, 'Matching with the class list'],
-  [12, 'Confirming matches'],
-]
-
-// Where recognition boxes appear on the classroom camera image (percent).
-const BOXES = Array.from({ length: 26 }, (_, i) => {
-  const row = Math.floor(i / 7)
-  const col = i % 7
-  return { x: 10 + col * 12.2 + (row % 2) * 5, y: 44 + row * 11, s: 6.5 - row * 0.4 }
-})
-
-function RoomScanModal({ session, now, onFinish, onClose }: { session: LecSession; now: number; onFinish: (ids: string[]) => void; onClose: () => void }) {
-  const [t, setT] = useState(0)
-  const [done, setDone] = useState(false)
-  const result = useMemo(() => roomScan(session, now), [session, now])
-
-  useEffect(() => {
-    const t0 = performance.now()
-    const id = setInterval(() => {
-      const e = (performance.now() - t0) / 1000
-      if (e >= SCAN_SECONDS) {
-        clearInterval(id)
-        setT(SCAN_SECONDS)
-        setDone(true)
-        onFinish(result.recognised)
-      } else setT(e)
-    }, 100)
-    return () => clearInterval(id)
-    // run once when the scan opens
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const k = t / SCAN_SECONDS
-  const count = Math.round(result.recognised.length * Math.min(1, k * 1.15))
-  const stage = [...STAGES].reverse().find(([s]) => t >= s)?.[1] ?? STAGES[0][1]
-  const missed = result.inRoom - result.recognised.length
-
-  return (
-    <Modal open wide onClose={onClose} title={`Face scan, ${session.room.split(',')[0]}`} sub={`The room camera scans the class for ${SCAN_SECONDS} seconds and marks recognised students present.`}>
-      {!done ? (
-        <div className="stack" style={{ gap: 12 }}>
-          <div className="face-video scan scanning room-scan">
-            <img src={`${import.meta.env.BASE_URL}cctv/lecture-hall.jpg`} alt="Classroom camera view" />
-            <span className="scan-line" />
-            {BOXES.slice(0, Math.floor(BOXES.length * Math.min(1, k * 1.2))).map((b, i) => (
-              <span key={i} className="face-box live" style={{ left: `${b.x}%`, top: `${b.y}%`, width: `${b.s}%`, height: `${b.s * 1.5}%` }} />
-            ))}
-            <div className="room-scan-count">
-              <Users size={16} /> <strong className="num">{count}</strong> recognised
-            </div>
-          </div>
-          <div className="scan-progress">
-            <div className="row between small">
-              <strong>{stage}</strong>
-              <span className="num muted">{Math.max(0, Math.ceil(SCAN_SECONDS - t))} s</span>
-            </div>
-            <div className="cap-bar">
-              <i style={{ width: `${k * 100}%`, background: 'var(--primary)', transition: 'width 0.1s linear' }} />
-            </div>
-            <ol className="scan-stages">
-              {STAGES.map(([s, label], i) => (
-                <li key={label} className={t >= (STAGES[i + 1]?.[0] ?? SCAN_SECONDS) ? 'done' : t >= s ? 'on' : ''}>
-                  {label}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      ) : (
-        <div className="face-result match">
-          <h3>
-            <CheckCircle2 size={22} /> {result.recognised.length} students recognised and marked present
-          </h3>
-          <div className="att-stats" style={{ width: '100%' }}>
-            <div>
-              <span>People counter</span>
-              <strong>{result.inRoom} students in the room</strong>
-            </div>
-            <div>
-              <span>Recognised by the camera</span>
-              <strong>{result.recognised.length}</strong>
-            </div>
-            <div>
-              <span>Not recognised</span>
-              <strong className={missed > 0 ? 'c-red' : ''}>{missed}</strong>
-            </div>
-          </div>
-          {missed > 0 && <p className="small" style={{ marginTop: 10 }}>Some faces were turned away or covered. Mark the {missed} missing {missed === 1 ? 'student' : 'students'} present yourself from the list.</p>}
-          <div className="row" style={{ gap: 8, justifyContent: 'center', marginTop: 14 }}>
-            <button className="btn" onClick={onClose}>
-              {missed > 0 ? 'Mark the rest myself' : 'Done'}
-            </button>
-          </div>
-        </div>
-      )}
-    </Modal>
   )
 }

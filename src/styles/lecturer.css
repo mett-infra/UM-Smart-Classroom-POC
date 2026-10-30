@@ -485,3 +485,203 @@
     padding: 0 14px 12px;
   }
 }
+
+/* ---------- Day 4: live class attendance and room control ---------- */
+.lc-att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e6ebf7;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lc-att-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lc-att-chip.need {
+  border-color: var(--gold);
+  animation: attpulse 2s ease-in-out infinite;
+}
+
+.lc-att-chip-cta {
+  color: #f3d48c;
+}
+
+@keyframes attpulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(200, 149, 44, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(200, 149, 44, 0);
+  }
+}
+
+.lc-panel-tabs.many {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lc-panel-tabs.many > button {
+  flex: 1 0 auto;
+  padding: 12px 8px;
+  font-size: 12px;
+}
+
+.lc-att-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.lc-att-stats > div {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+
+.lc-att-stats strong {
+  font-size: 18px;
+  color: #fff;
+}
+
+.lc-att-stats span,
+.lc-att-sub {
+  font-size: 11px;
+  color: var(--lc-muted);
+}
+
+.lc-att-sub {
+  display: block;
+}
+
+.lc-att-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.lc-att-note > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.lc-att-note.info {
+  background: rgba(47, 85, 212, 0.18);
+  color: #cfdafc;
+}
+
+.lc-att-note.warn {
+  background: rgba(200, 149, 44, 0.16);
+  color: #f3d48c;
+}
+
+.lc-att-note.warn strong {
+  color: #fff;
+}
+
+.lc-att-note.ok {
+  background: rgba(31, 140, 90, 0.18);
+  color: #9fe0bf;
+}
+
+.lc-att-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lc-att-seg {
+  display: flex;
+}
+
+.lc-att-seg button {
+  flex: 1;
+}
+
+.lc-att-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lc-att-search svg {
+  position: absolute;
+  left: 10px;
+  color: var(--lc-muted);
+}
+
+.lc-att-search .input {
+  padding-left: 32px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.lc-att-row,
+.lc-dev {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--lc-line);
+}
+
+.lc-onoff {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.lc-onoff button {
+  color: #c9d2e8;
+  min-height: 32px;
+  padding: 6px 10px;
+}
+
+.lc-onoff button + button {
+  border-left-color: rgba(255, 255, 255, 0.18);
+}
+
+.lc-onoff button:hover:not(:disabled):not(.sel) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lc-onoff button:last-child.sel {
+  background: #3a4870;
+}
+
+.lc-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lc-panel-tabs.many,
+.lc-panel .lc-pane {
+  min-width: 0;
+}
+
+.lc-panel .lc-chat {
+  grid-template-columns: minmax(0, 1fr);
+  overflow-x: hidden;
+}
+
+.lc-panel-tabs.many > button:not(.on) .lbl {
+  display: none;
+}
+
+.lc-panel-tabs.many > button {
+  padding: 12px 10px;
+}
