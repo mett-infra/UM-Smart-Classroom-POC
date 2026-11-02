@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { announcements as seedAnnouncements, assignments as seedAssignments, roster, rooms as seedRooms, tickets as seedTickets } from '../data/mock'
 import type { Announcement, Assignment, Material, Room, Ticket } from '../data/types'
+import type { LiveAssignment } from '../data/labs'
 import { seedAudit, seedAutoLog, seedAutoRules, seedDevices, seedDoorExceptions, seedDoorSchedules, seedIncidents, seedPolicies, seedSpaces, type AuditEntry, type AutoOutcome, type AutoRule, type Device, type DoorException, type DoorSchedule, type Incident, type NetPolicy, type Space } from '../data/smartcampus'
 
 /*
@@ -70,6 +71,8 @@ interface DemoState {
   autoLog: AutoOutcome[]
   // Review 2: door timers set per room in Smart rooms (door id -> times)
   doorTimers: Record<string, DoorTimer>
+  // Live assignments (labs) started from the lecturer's live class
+  liveAssignments: LiveAssignment[]
 }
 
 export interface DoorTimer {
@@ -141,6 +144,7 @@ const initialState = (): DemoState => ({
   autoLog: seedAutoLog,
   // Example from the review: classroom DK1 unlocks at 08:00 and locks at 18:00 on weekdays.
   doorTimers: { 'DR-FS-DK1': { unlock: '08:00', lock: '18:00', days: [1, 2, 3, 4, 5] } },
+  liveAssignments: [],
 })
 
 function load(): DemoState {
@@ -194,6 +198,20 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       /* storage unavailable: demo still works in memory */
     }
   }, [state])
+
+  // Keep tabs in step: a change in one tab (for example the lecturer ending a live assignment) shows in the others.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== KEY || !e.newValue) return
+      try {
+        setState({ ...initialState(), ...JSON.parse(e.newValue) })
+      } catch {
+        /* ignore malformed data */
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   const update = useCallback((fn: (s: DemoState) => DemoState) => setState(fn), [])
 

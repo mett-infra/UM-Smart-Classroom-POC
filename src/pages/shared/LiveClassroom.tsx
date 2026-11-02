@@ -33,6 +33,9 @@ import { useDemo } from '../../store/DemoStore'
 import { VoiceCommand } from '../../components/VoiceCommand'
 import { lecSessions } from '../lecturer/attendanceData'
 import { useLecAttendance, useNow } from '../lecturer/useLecAttendance'
+import { LiveAssignmentSetup } from '../lecturer/LiveAssignmentSetup'
+import { fmtLab, useLabActions, useLabClock } from '../lecturer/labClock'
+import { limitOf, progressOf } from '../../data/labs'
 
 type StageTab = 'slides' | 'board' | 'screen'
 
@@ -328,7 +331,7 @@ function Whiteboard({ canDraw }: { canDraw: boolean }) {
 export default function LiveClassroom({ role }: { role: Role }) {
   const { sessionId = '' } = useParams()
   const nav = useNavigate()
-  const { toast, log } = useDemo()
+  const { state, toast, log } = useDemo()
   const isHost = role === 'lecturer'
   const me = personas[role]
   const session = sessions.find((s) => s.id === sessionId) ?? sessions.find((s) => s.status === 'live')!
@@ -363,6 +366,7 @@ export default function LiveClassroom({ role }: { role: Role }) {
   const [summary, setSummary] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
+  const [assignStatus, setAssignStatus] = useState(false)
 
   // Day 4: attendance by face recognition and room control, for the lecturer's own session
   const attSess = lecSessions.find((x) => x.id === session.id)
@@ -370,6 +374,10 @@ export default function LiveClassroom({ role }: { role: Role }) {
   const now = useNow(10000)
   const att = useLecAttendance(attSess ?? lecSessions[0], now)
   const roomId = attSess?.roomId ?? 'sp-dk2'
+  const la = state.liveAssignments.find((x) => x.sessionId === session.id && x.status === 'running') ?? state.liveAssignments.find((x) => x.sessionId === session.id && x.status === 'ended')
+  const labT = useLabClock(la)
+  const labActions = useLabActions()
+  const monitorUrl = la ? `${import.meta.env.BASE_URL}lecturer/live-assignments/${la.id}` : ''
 
 
   const camRef = useRef<HTMLVideoElement>(null)
@@ -590,8 +598,17 @@ export default function LiveClassroom({ role }: { role: Role }) {
           )}
           {breakoutActive && <Badge tone="gold">Breakout rooms open</Badge>}
           {isHost && (
-            <button className="lc-assign-chip" onClick={() => setAssignOpen(true)} title="Start a live assignment for the students in this class">
-              <FlaskConical size={14} /> Live assignment
+            <button className={`lc-assign-chip ${la?.status === 'running' ? 'running' : ''}`} onClick={() => (la ? setAssignStatus(true) : setAssignOpen(true))} title="Live assignment for the students in this class">
+              <FlaskConical size={14} />
+              {la?.status === 'running' ? (
+                <>
+                  Live assignment <span className="num">{fmtLab(limitOf(la) - labT)}</span>
+                </>
+              ) : la?.status === 'ended' ? (
+                'Live assignment: to mark'
+              ) : (
+                'Live assignment'
+              )}
             </button>
           )}
           <span className="lc-count">
@@ -831,35 +848,74 @@ export default function LiveClassroom({ role }: { role: Role }) {
 
       {voiceOpen && <VoiceCommand roomId={roomId} onClose={() => setVoiceOpen(false)} />}
 
-      <Modal
-        open={assignOpen}
-        onClose={() => setAssignOpen(false)}
-        title="Live assignment"
-        sub={`${course.code} ${course.title}, lecture ${session.lectureNo}`}
-        foot={
-          <button className="btn" onClick={() => setAssignOpen(false)}>
-            Got it
-          </button>
-        }
-      >
-        <div className="lc-assign-steps">
-          {[
-            ['Choose the assessment', 'Pick a lab or task from the course, with its steps and time limit.'],
-            ['Set up a lab for each student present', hasAtt && att.present.length ? `One ready-to-use lab per student marked present (${att.present.length} right now).` : 'One ready-to-use lab per student marked present, so take attendance first.'],
-            ['Watch progress live', 'See each student’s steps completed while they work.'],
-            ['End the assignment', 'Every student’s work is submitted automatically, ready for you to review and mark.'],
-          ].map(([t, d], i) => (
-            <div key={t} className="lc-assign-step">
-              <span>{i + 1}</span>
-              <div>
-                <strong className="small">{t}</strong>
-                <p className="xs muted">{d}</p>
+      {assignOpen && attSess && (
+        <LiveAssignmentSetup
+          sessionId={attSess.id}
+          courseCode={attSess.code}
+          studentIds={att.present.map((p) => p.id)}
+          names={Object.fromEntries(att.people.map((p) => [p.id, p.name]))}
+          onClose={() => setAssignOpen(false)}
+          onTakeAttendance={() => window.open(`${import.meta.env.BASE_URL}lecturer/attendance`, '_blank')}
+          onStarted={() => {
+            setAssignOpen(false)
+            setAssignStatus(true)
+          }}
+        />
+      )}
+      {assignStatus && la && (
+        <Modal
+          open
+          onClose={() => setAssignStatus(false)}
+          title={la.template.title}
+          sub={la.status === 'running' ? `Running for ${la.studentIds.length} students. Started ${la.startedAt}.` : `Ended ${la.endedAt ?? ''}. Every lab was submitted automatically.`}
+          foot={
+            <>
+              {la.status === 'running' && (
+                <button
+                  className="btn danger"
+                  onClick={() => {
+                    labActions.end(la)
+                  }}
+                >
+                  End and submit all
+                </button>
+              )}
+              <a className="btn" href={monitorUrl} target="_blank" rel="noreferrer">
+                {la.status === 'running' ? 'Open the live monitor' : 'Review and mark'}
+              </a>
+            </>
+          }
+        >
+          {(() => {
+            const n = la.template.steps.length
+            const ps = la.studentIds.map((id) => progressOf(la, id, labT))
+            const finished = ps.filter((p) => p.done >= n).length
+            const help = ps.filter((p) => p.state === 'Needs help').length
+            const avg = Math.round((ps.reduce((x, p) => x + p.done, 0) / Math.max(1, ps.length * n)) * 100)
+            return (
+              <div className="att-stats" style={{ marginTop: 0 }}>
+                <div>
+                  <span>{la.status === 'running' ? 'Time left' : 'Submitted'}</span>
+                  <strong className="num">{la.status === 'running' ? fmtLab(limitOf(la) - labT) : la.studentIds.length}</strong>
+                </div>
+                <div>
+                  <span>Average progress</span>
+                  <strong>{avg}%</strong>
+                </div>
+                <div>
+                  <span>Finished every step</span>
+                  <strong>{finished}</strong>
+                </div>
+                <div>
+                  <span>Need help</span>
+                  <strong className={help ? 'c-gold' : ''}>{la.status === 'running' ? help : 'n/a'}</strong>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <p className="xs muted mt-2">This is the entry point for live assignments. The full flow is added in the live assignment update.</p>
-      </Modal>
+            )
+          })()}
+          <p className="xs muted mt-2">The live monitor opens in a new tab, so the class keeps running here.</p>
+        </Modal>
+      )}
 
       <Modal
         open={breakout}

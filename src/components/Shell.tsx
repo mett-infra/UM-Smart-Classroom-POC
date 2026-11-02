@@ -27,6 +27,7 @@ import {
   Network,
   ScrollText,
   UserCheck,
+  FlaskConical,
   ScanFace,
 } from 'lucide-react'
 import { liveSessionId, notificationsByRole, personas } from '../data/mock'
@@ -93,6 +94,7 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
           { to: `/lecturer/live/${liveSessionId}`, label: 'Live class', icon: <Radio size={s} />, live: true },
           { to: '/lecturer/courses', label: 'My courses', icon: <BookOpen size={s} /> },
           { to: '/lecturer/attendance', label: 'Attendance', icon: <UserRound size={s} /> },
+          { to: '/lecturer/live-assignments', label: 'Live assignments', icon: <FlaskConical size={s} />, live: state.liveAssignments.some((a) => a.status === 'running') },
         ],
       },
       {

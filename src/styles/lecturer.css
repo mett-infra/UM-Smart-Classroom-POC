@@ -784,3 +784,388 @@
     padding: 0 9px;
   }
 }
+
+/* ---------- Live assignment ---------- */
+.lc-assign-chip.running {
+  background: var(--gold);
+  color: #1b1405;
+  animation: attpulse 2.4s ease-in-out infinite;
+}
+
+.lc-assign-chip.running .num {
+  font-weight: 800;
+}
+
+.la-tpl {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  text-align: left;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 14px;
+}
+
+.la-tpl:hover {
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+
+.la-tpl strong {
+  display: block;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.la-tpl span.grow > span {
+  display: block;
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.la-tpl-ico {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--gold-50);
+  color: var(--gold-600);
+}
+
+.la-upload {
+  padding: 20px 16px;
+}
+
+.la-steps-edit {
+  display: grid;
+  gap: 8px;
+}
+
+.la-step-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.la-step-n {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--primary-50);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.la-marks {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.la-settings {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.la-total {
+  margin-left: auto;
+  display: grid;
+  text-align: right;
+}
+
+.la-total strong {
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.la-env {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.la-env svg {
+  flex-shrink: 0;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+.la-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 5px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.la-tile {
+  aspect-ratio: 1;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--faint);
+  border: 1px solid var(--line);
+  transition: background 0.3s, color 0.3s;
+}
+
+.la-tile.wait {
+  animation: tilewait 1.2s ease-in-out infinite;
+}
+
+.la-tile.retry {
+  background: var(--amber-50);
+  color: var(--amber);
+  border-color: #f1d9a6;
+}
+
+.la-tile.ok {
+  background: var(--green-50);
+  color: var(--green);
+  border-color: #c7e8d8;
+  animation: none;
+}
+
+@keyframes tilewait {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.la-clock {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.la-clock > div:first-child {
+  display: grid;
+}
+
+.la-clock > div:first-child strong {
+  font-size: 34px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.la-clock .grow {
+  min-width: 200px;
+}
+
+.la-table tr.la-help td {
+  background: var(--amber-50);
+}
+
+.la-funnel {
+  display: grid;
+  gap: 12px;
+}
+
+.la-funnel .small span.truncate {
+  min-width: 0;
+  margin-right: 8px;
+}
+
+.la-viewer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 16px;
+}
+
+.la-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.la-checklist li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--faint);
+}
+
+.la-checklist li > div {
+  display: grid;
+}
+
+.la-checklist li strong {
+  color: var(--text-2);
+}
+
+.la-checklist li.done {
+  color: var(--green);
+}
+
+.la-checklist li.done strong {
+  color: var(--ink);
+}
+
+.la-checklist li.now {
+  color: var(--primary);
+}
+
+.la-checklist li.now strong {
+  color: var(--ink);
+}
+
+.la-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  flex-shrink: 0;
+}
+
+.la-term {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: #0d1530;
+  min-height: 220px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.la-term-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #172347;
+}
+
+.la-term-bar span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3a4870;
+}
+
+.la-term-bar em {
+  margin-left: 8px;
+  font-style: normal;
+  font-size: 11px;
+  color: #9aa7c4;
+}
+
+.la-term pre {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #cfe7d8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.la-mark {
+  width: 70px;
+}
+
+@media (max-width: 760px) {
+  .la-viewer {
+    grid-template-columns: 1fr;
+  }
+  .la-step-edit {
+    flex-wrap: wrap;
+  }
+  .la-step-edit .grow {
+    flex-basis: calc(100% - 40px);
+  }
+  .la-total {
+    margin-left: 0;
+    text-align: left;
+  }
+}
+
+/* Light form fields inside pop-ups that open over the dark live class */
+.lc .modal .input,
+.lc .modal .textarea,
+.lc .modal .select {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.lc .modal .input::placeholder,
+.lc .modal .textarea::placeholder {
+  color: var(--faint);
+}
+
+.lc .modal .icon-btn {
+  background: var(--surface);
+  color: var(--text-2);
+  border-color: var(--line);
+}
+
+.la-mark {
+  flex: 0 0 72px;
+  width: 72px;
+}
+
+.la-table td .row {
+  flex-wrap: nowrap;
+}
+
+.la-step-edit .input {
+  width: auto;
+}
+
+.la-step-edit .input.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.la-step-edit .la-marks {
+  flex: 0 0 64px;
+  width: 64px;
+}
+
+@media (max-width: 640px) {
+  .la-table .col-sugg {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .la-step-edit {
+    flex-wrap: nowrap;
+  }
+  .la-step-edit .input.grow {
+    flex-basis: auto;
+  }
+  .la-step-edit > .xs {
+    display: none;
+  }
+  .la-step-edit .la-marks {
+    flex-basis: 54px;
+    width: 54px;
+  }
+}

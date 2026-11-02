@@ -80,6 +80,15 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - The top-right "Take attendance" chip is replaced by a **Live assignment** button for the lecturer. It shows the steps of a live assignment; the full flow comes in the live assignment update.
 - Attendance is still taken on the lecturer's **Attendance** page (face scan plus manual marking), and **Room voice** stays in the bottom bar.
 
+### Live assignment (lecturer)
+- **Start:** in the live class, the **Live assignment** button (or **Live assignments**, New live assignment, in the lecturer menu). Choose a lab (Lab 7 Banker's algorithm, Lab 8 CPU scheduling, Lab 9 semaphores) or **upload your own** file; check and edit the steps, marks and time (30 to 90 minutes).
+- **Set up labs:** one isolated lab per student **marked present** in Attendance (take attendance first). A grid shows each lab starting; one retries automatically.
+- **Monitor live** (opens in a new tab so the class keeps running): time left, labs running, average progress, finished, need help (no progress for 6+ minutes), reconnecting; progress by step; every student's current step; **View lab** shows their checklist and terminal. **Add 10 minutes** if needed.
+- **End:** **End assignment** (or time runs out) submits every lab automatically and shuts it down. The live class button changes to "to mark".
+- **Review and mark:** suggested marks (full marks per completed step, half for a step started), edit any mark with feedback, **Use suggested marks**, **Release marks**, Export CSV.
+- **Demo speed:** Fast (20x) makes a 45-minute lab take about 2 minutes; switch to Real time at any point. Tabs stay in sync, so ending in the monitor tab updates the live class tab.
+- Student progress is simulated in this build; the student's own lab screen comes next.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.

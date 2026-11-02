@@ -22,6 +22,7 @@ import LecturerCourse from './pages/lecturer/LecturerCourse'
 import Attendance from './pages/lecturer/Attendance'
 import Insights from './pages/lecturer/Insights'
 import TeachingAssistant from './pages/lecturer/TeachingAssistant'
+import LiveAssignments from './pages/lecturer/LiveAssignments'
 
 import MgmtOverview from './pages/management/MgmtOverview'
 import LiveOps from './pages/management/LiveOps'
@@ -64,6 +65,8 @@ export default function App() {
           <Route path="courses" element={<LecturerCourses />} />
           <Route path="courses/:courseId" element={<LecturerCourse />} />
           <Route path="attendance" element={<Attendance />} />
+          <Route path="live-assignments" element={<LiveAssignments />} />
+          <Route path="live-assignments/:id" element={<LiveAssignments />} />
           <Route path="insights" element={<Insights />} />
           <Route path="assistant" element={<TeachingAssistant />} />
           <Route path="announcements" element={<Announcements role="lecturer" />} />
