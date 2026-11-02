@@ -146,7 +146,7 @@ export default function LecturerCourse() {
         <div className="metric">
           <div className="metric-label">Engagement</div>
           <div className="metric-value">{course.engagement}</div>
-          <div className="metric-foot">Views, chat and quiz activity</div>
+          <div className="metric-foot">Views and quiz activity</div>
         </div>
         <div className="metric">
           <div className="metric-label">Average mark</div>

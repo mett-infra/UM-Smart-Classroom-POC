@@ -25,7 +25,7 @@ const roles: { role: Role; label: string; icon: ReactElement; color: string; tin
     icon: <GraduationCap size={18} />,
     color: 'var(--role-student)',
     tint: 'var(--primary-50)',
-    points: ['Join a live hybrid lecture with chat, polls and captions', 'Pick up course materials and recordings by week', 'Submit assignments and track grades', 'Ask the AI study assistant about a lecture'],
+    points: ['Join a live hybrid lecture with captions in English and Malay', 'Pick up course materials and recordings by week', 'Submit assignments and track grades', 'Ask the AI study assistant about a lecture'],
   },
   {
     role: 'lecturer',
@@ -33,7 +33,7 @@ const roles: { role: Role; label: string; icon: ReactElement; color: string; tin
     icon: <BookOpen size={18} />,
     color: 'var(--role-lecturer)',
     tint: 'var(--teal-50)',
-    points: ['Run the class: slides, whiteboard, polls, breakout rooms', 'Take attendance with face recognition, and mark anyone the camera misses', 'Share materials and assessments week by week', 'Turn a lecture transcript into a quiz'],
+    points: ['Run the class: slides, whiteboard, breakout rooms, room voice control', 'Take attendance with face recognition, and mark anyone the camera misses', 'Share materials and assessments week by week', 'Turn a lecture transcript into a quiz'],
   },
   {
     role: 'management',

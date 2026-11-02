@@ -75,13 +75,18 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - **Room control in the live class:** a **Room** panel with On/Off for the DK2 devices and Lock/Unlock for the door, plus **Room voice** in the bottom bar for voice commands (for example "dim the lights to 30%", "switch off the fan", "tutup lampu").
 - The end-of-class summary shows how many were marked present by face recognition and by the lecturer, and warns if anyone counted in the hall is still not marked.
 
+### Review 4 changes (live class)
+- In production the live class runs on Zoom or Microsoft Teams, so the right side of the live class now shows **People only** (who is attending, raised hands, mute everyone, breakout rooms). Chat, Q&A, polls and the in-class attendance and room panels are removed.
+- The top-right "Take attendance" chip is replaced by a **Live assignment** button for the lecturer. It shows the steps of a live assignment; the full flow comes in the live assignment update.
+- Attendance is still taken on the lecturer's **Attendance** page (face scan plus manual marking), and **Room voice** stays in the bottom bar.
+
 ## Suggested demo path (about 10 minutes)
 
 1. Open the landing page and explain the three roles.
-2. **Student**: home, then **Join class**. Show chat, captions (switch EN/BM), raise hand, reactions. Wait about 15 seconds for the lecturer's poll and vote.
+2. **Student**: home, then **Join class**. Show captions (switch EN/BM), raise hand, reactions and the People list.
 3. **Student**: My courses, WIA2004, week 7 content. Assignments, open Assignment 2, attach a file, submit.
 4. **Student**: AI study assistant, ask for flashcards.
-5. **Lecturer**: home, open live class. Click the attendance chip, start the face scan, mark the students it missed, use Room voice to dim the lights. Then whiteboard, recording, poll, end class.
+5. **Lecturer**: Attendance, start the face scan and mark the students it missed. Then open the live class: Room voice to dim the lights, whiteboard, recording, the Live assignment button, end class.
 6. **Lecturer**: Attendance, start the face scan, then mark the students the camera missed. AI teaching assistant (generate a quiz).
 7. **Management**: overview, live operations, academic performance, smart rooms (turn equipment on and off), maintenance (report and resolve a ticket), reports (generate and download).
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactElement } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -7,90 +7,34 @@ import {
   Circle,
   Eraser,
   Hand,
-  MessageSquare,
   Mic,
   MicOff,
   MonitorUp,
   Pencil,
   PhoneOff,
-  Pin,
   Presentation,
-  Send,
   SmilePlus,
   Square,
-  ThumbsUp,
   Trash2,
   Users,
   Video,
   VideoOff,
-  Vote,
   Captions,
   LayoutGrid,
-  CheckCircle2,
-  HelpCircle,
   X,
+  FlaskConical,
   AudioLines,
-  Building2,
-  Laptop,
-  Lock,
-  LockOpen,
-  ScanFace,
-  Search,
-  UserCheck,
 } from 'lucide-react'
-import { captionScript, courseById, lecturerName, liveChatScript, personas, roster, sessions } from '../../data/mock'
+import { captionScript, courseById, lecturerName, personas, roster, sessions } from '../../data/mock'
 import type { Role } from '../../data/types'
 import { Avatar, Badge, Modal } from '../../components/ui'
 import { BrandMark } from '../../components/Shell'
-import { useDemo, type DeviceState } from '../../store/DemoStore'
-import { useFaces } from '../../store/faces'
-import { FaceRecognitionModal, SCAN_SECONDS } from '../../components/FaceRecognitionModal'
+import { useDemo } from '../../store/DemoStore'
 import { VoiceCommand } from '../../components/VoiceCommand'
-import { lecSessions, type LecSession } from '../lecturer/attendanceData'
-import { RoomScanModal } from '../lecturer/RoomScanModal'
+import { lecSessions } from '../lecturer/attendanceData'
 import { useLecAttendance, useNow } from '../lecturer/useLecAttendance'
-import { defaultsFor, isSwitch } from '../management/roomControl'
 
-type PanelTab = 'chat' | 'qa' | 'poll' | 'people' | 'attend' | 'room'
 type StageTab = 'slides' | 'board' | 'screen'
-
-interface ChatMsg {
-  id: number
-  from: string
-  text: string
-  time: string
-  me?: boolean
-  pinned?: boolean
-  host?: boolean
-}
-
-interface Question {
-  id: number
-  from: string
-  text: string
-  votes: number
-  voted?: boolean
-  answered?: boolean
-}
-
-interface Poll {
-  question: string
-  options: { label: string; votes: number }[]
-  state: 'draft' | 'open' | 'closed'
-  myVote?: number
-}
-
-const POLL_TEMPLATE: Poll = {
-  question: 'Which deadlock condition does requesting all resources at once remove?',
-  options: [
-    { label: 'Mutual exclusion', votes: 0 },
-    { label: 'Hold and wait', votes: 0 },
-    { label: 'No preemption', votes: 0 },
-    { label: 'Circular wait', votes: 0 },
-  ],
-  state: 'draft',
-}
-const POLL_WEIGHTS = [0.08, 0.63, 0.11, 0.18]
 
 const fmtClock = (secs: number) => {
   const h = Math.floor(secs / 3600)
@@ -239,8 +183,8 @@ function Slide({ index }: { index: number }) {
       return (
         <div className="slide slide-title">
           <span className="slide-kicker">Check your understanding</span>
-          <h2>Answer the poll in the side panel</h2>
-          <p>Results appear live when the lecturer shares them.</p>
+          <h2>Which condition does requesting all resources at once remove?</h2>
+          <p>Discuss with the person next to you. Next up: the live lab.</p>
           <div className="slide-band" />
         </div>
       )
@@ -384,7 +328,7 @@ function Whiteboard({ canDraw }: { canDraw: boolean }) {
 export default function LiveClassroom({ role }: { role: Role }) {
   const { sessionId = '' } = useParams()
   const nav = useNavigate()
-  const { toast, log, update } = useDemo()
+  const { toast, log } = useDemo()
   const isHost = role === 'lecturer'
   const me = personas[role]
   const session = sessions.find((s) => s.id === sessionId) ?? sessions.find((s) => s.status === 'live')!
@@ -398,7 +342,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
   const [stage, setStage] = useState<StageTab>('slides')
   const [slide, setSlide] = useState(2)
-  const [tab, setTab] = useState<PanelTab>('chat')
   const [panelOpen, setPanelOpen] = useState(false)
   const [elapsed, setElapsed] = useState(12 * 60 + 4)
   const [joinedAt] = useState(() => Date.now())
@@ -418,10 +361,8 @@ export default function LiveClassroom({ role }: { role: Role }) {
   const [breakoutActive, setBreakoutActive] = useState(false)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [summary, setSummary] = useState(false)
-  const [unread, setUnread] = useState(0)
-  const [scanOpen, setScanOpen] = useState(false)
-  const [deviceOpen, setDeviceOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
+  const [assignOpen, setAssignOpen] = useState(false)
 
   // Day 4: attendance by face recognition and room control, for the lecturer's own session
   const attSess = lecSessions.find((x) => x.id === session.id)
@@ -429,31 +370,8 @@ export default function LiveClassroom({ role }: { role: Role }) {
   const now = useNow(10000)
   const att = useLecAttendance(attSess ?? lecSessions[0], now)
   const roomId = attSess?.roomId ?? 'sp-dk2'
-  const openTab = (t: PanelTab) => {
-    setTab(t)
-    setPanelOpen(true)
-  }
 
-  const t = () => new Date(2026, 9, 21, 10, 0, 0, 0).getTime()
-  const clockAt = useCallback((secs: number) => new Date(t() + secs * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), [])
 
-  const [chat, setChat] = useState<ChatMsg[]>(() => [
-    { id: 1, from: lecturer, text: 'Good morning. Slides for today are in the course page under week 7.', time: '10:01', host: true, pinned: true },
-    { id: 2, from: 'Ooi Shu Ting', text: 'Good morning Dr!', time: '10:02' },
-    { id: 3, from: 'Ahmad Danial bin Roslan', text: 'Can we get the recording later?', time: '10:06' },
-    { id: 4, from: lecturer, text: 'Yes, the recording and captions will be on the course page after class.', time: '10:06', host: true },
-  ])
-  const scriptIdx = useRef(0)
-  const [questions, setQuestions] = useState<Question[]>([
-    { id: 1, from: 'Tan Jia Hui', text: 'Is a cycle always a deadlock when resources have several instances?', votes: 14 },
-    { id: 2, from: 'Anonymous', text: 'How is avoidance different from prevention in practice?', votes: 9 },
-    { id: 3, from: 'Vikram a/l Selvam', text: 'Will the Banker’s algorithm be on the mid-term?', votes: 6, answered: true },
-  ])
-  const [qText, setQText] = useState('')
-  const [anon, setAnon] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [poll, setPoll] = useState<Poll>(POLL_TEMPLATE)
-  const chatEnd = useRef<HTMLDivElement>(null)
   const camRef = useRef<HTMLVideoElement>(null)
   const screenRef = useRef<HTMLVideoElement>(null)
   const lobbyRef = useRef<HTMLVideoElement>(null)
@@ -480,57 +398,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
       clearInterval(c)
     }
   }, [])
-
-  // scripted chat
-  const elapsedRef = useRef(elapsed)
-  elapsedRef.current = elapsed
-  useEffect(() => {
-    if (!joined) return
-    const id = setInterval(() => {
-      if (scriptIdx.current >= liveChatScript.length) return
-      const m = liveChatScript[scriptIdx.current++]
-      setChat((c) => [...c, { id: Date.now(), from: m.from, text: m.text, time: clockAt(elapsedRef.current) }])
-      setUnread((u) => u + 1)
-    }, 7000)
-    return () => clearInterval(id)
-  }, [joined, clockAt])
-
-  useEffect(() => {
-    if (tab === 'chat' && (panelOpen || window.innerWidth > 900)) setUnread(0)
-    chatEnd.current?.scrollIntoView({ block: 'nearest' })
-  }, [chat, tab, panelOpen])
-
-  // student: lecturer launches a poll after a while
-  useEffect(() => {
-    if (isHost || !joined) return
-    const id = setTimeout(() => {
-      setPoll((p) => (p.state === 'draft' ? { ...p, state: 'open' } : p))
-      setSlide(5)
-      toast(`${lecturer.split(' bin')[0]} started a poll.`, 'info')
-    }, 16000)
-    return () => clearTimeout(id)
-  }, [isHost, joined, lecturer, toast])
-
-  // simulated votes while poll is open
-  useEffect(() => {
-    if (poll.state !== 'open') return
-    const id = setInterval(() => {
-      setPoll((p) => {
-        const total = p.options.reduce((n, o) => n + o.votes, 0)
-        if (total >= 112) return p
-        const add = 2 + Math.floor(Math.random() * 6)
-        const opts = p.options.map((o) => ({ ...o }))
-        for (let k = 0; k < add; k++) {
-          const r = Math.random()
-          let acc = 0
-          const idx = POLL_WEIGHTS.findIndex((w) => (acc += w) >= r)
-          opts[idx < 0 ? 1 : idx].votes++
-        }
-        return { ...p, options: opts }
-      })
-    }, 900)
-    return () => clearInterval(id)
-  }, [poll.state])
 
   // media streams into video elements
   useEffect(() => {
@@ -596,21 +463,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
     setShowReact(false)
   }
 
-  const send = () => {
-    const text = msg.trim()
-    if (!text) return
-    setChat((c) => [...c, { id: Date.now(), from: me.name, text, time: clockAt(elapsed), me: true, host: isHost }])
-    setMsg('')
-  }
-
-  const ask = () => {
-    const text = qText.trim()
-    if (!text) return
-    setQuestions((q) => [{ id: Date.now(), from: anon ? 'Anonymous' : me.name, text, votes: 1, voted: true }, ...q])
-    setQText('')
-    toast('Question posted. Classmates can upvote it.')
-  }
-
   const toggleHand = () => {
     setHand((h) => {
       const next = !h
@@ -630,28 +482,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
     }
   }
 
-  const launchPoll = () => {
-    setPoll({ ...POLL_TEMPLATE, options: POLL_TEMPLATE.options.map((o) => ({ ...o })), state: 'open' })
-    setSlide(5)
-    setStage('slides')
-    toast('Poll launched to all participants.')
-  }
-
-  const endPoll = () => {
-    setPoll((p) => ({ ...p, state: 'closed' }))
-    toast('Poll closed. Results are shared with the class.')
-  }
-
-  const vote = (i: number) => {
-    setPoll((p) => {
-      if (p.myVote !== undefined || p.state !== 'open') return p
-      const opts = p.options.map((o, k) => (k === i ? { ...o, votes: o.votes + 1 } : o))
-      return { ...p, options: opts, myVote: i }
-    })
-    update((s) => ({ ...s, pollsVoted: { ...s.pollsVoted, [session.id]: i } }))
-    toast('Vote submitted.')
-  }
-
   const finish = () => {
     setConfirmEnd(false)
     setSummary(true)
@@ -659,7 +489,7 @@ export default function LiveClassroom({ role }: { role: Role }) {
     screenStream?.getTracks().forEach((tr) => tr.stop())
     setCamStream(null)
     setScreenStream(null)
-    if (isHost) log({ text: `${course.code} lecture ${session.lectureNo} ended`, sub: `${attendees} attended, ${chat.length} chat messages`, kind: 'live' })
+    if (isHost) log({ text: `${course.code} lecture ${session.lectureNo} ended`, sub: `${attendees} attended`, kind: 'live' })
   }
 
   const publishRecording = () => {
@@ -668,7 +498,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
     nav('/lecturer')
   }
 
-  const pollTotal = poll.options.reduce((n, o) => n + o.votes, 0)
   const backTo = `/${role}`
   const minsAttended = Math.max(1, Math.round((Date.now() - joinedAt) / 60000))
 
@@ -760,10 +589,9 @@ export default function LiveClassroom({ role }: { role: Role }) {
             </span>
           )}
           {breakoutActive && <Badge tone="gold">Breakout rooms open</Badge>}
-          {hasAtt && (
-            <button className={`lc-att-chip ${att.scan ? '' : 'need'}`} onClick={() => openTab('attend')} title="Attendance by face recognition">
-              <UserCheck size={14} /> {att.present.length} present
-              {!att.scan && <span className="lc-att-chip-cta">Take attendance</span>}
+          {isHost && (
+            <button className="lc-assign-chip" onClick={() => setAssignOpen(true)} title="Start a live assignment for the students in this class">
+              <FlaskConical size={14} /> Live assignment
             </button>
           )}
           <span className="lc-count">
@@ -849,177 +677,17 @@ export default function LiveClassroom({ role }: { role: Role }) {
           </div>
         </section>
 
-        <aside className={`lc-panel ${panelOpen ? 'open' : ''}`} aria-label="Class panel">
-          <div className={`lc-panel-tabs ${hasAtt ? 'many' : ''}`}>
-            {(
-              [
-                ['chat', 'Chat', <MessageSquare size={15} key="c" />, unread],
-                ['qa', 'Q&A', <HelpCircle size={15} key="q" />, 0],
-                ['poll', 'Poll', <Vote size={15} key="p" />, poll.state === 'open' && poll.myVote === undefined && !isHost ? 1 : 0],
-                ['people', 'People', <Users size={15} key="u" />, isHost ? hands.length : 0],
-                ...(hasAtt
-                  ? ([
-                      ['attend', 'Attendance', <UserCheck size={15} key="a" />, att.scan ? 0 : 1],
-                      ['room', 'Room', <Building2 size={15} key="r" />, 0],
-                    ] as [PanelTab, string, ReactElement, number][])
-                  : []),
-              ] as [PanelTab, string, ReactElement, number][]
-            ).map(([id, label, icon, n]) => (
-              <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)} title={label} aria-label={label}>
-                {icon}
-                <span className="lbl">{label}</span>
-                {n > 0 && <span className="lc-dot">{n}</span>}
-              </button>
-            ))}
-            <button className="lc-panel-close" onClick={() => setPanelOpen(false)} aria-label="Close panel">
+        <aside className={`lc-panel ${panelOpen ? 'open' : ''}`} aria-label="People in this class">
+          <div className="lc-panel-head">
+            <strong>
+              <Users size={15} /> People
+            </strong>
+            <span>{attendees} in this class</span>
+            <button className="lc-panel-x" onClick={() => setPanelOpen(false)} aria-label="Close people list">
               <X size={16} />
             </button>
           </div>
-
-          {tab === 'chat' && (
-            <div className="lc-pane">
-              <div className="lc-chat">
-                {chat
-                  .filter((m) => m.pinned)
-                  .map((m) => (
-                    <div key={'p' + m.id} className="lc-pinned">
-                      <Pin size={13} /> <span>{m.text}</span>
-                    </div>
-                  ))}
-                {chat.map((m) => (
-                  <div key={m.id} className={`lc-msg ${m.me ? 'me' : ''}`}>
-                    <div className="lc-msg-head">
-                      <strong>{m.me ? 'You' : m.from}</strong>
-                      {m.host && <Badge tone="teal">Host</Badge>}
-                      <span>{m.time}</span>
-                      {isHost && !m.pinned && (
-                        <button className="lc-pin" onClick={() => setChat((c) => c.map((x) => ({ ...x, pinned: x.id === m.id })))} aria-label="Pin message" title="Pin for everyone">
-                          <Pin size={12} />
-                        </button>
-                      )}
-                    </div>
-                    <p>{m.text}</p>
-                  </div>
-                ))}
-                <div ref={chatEnd} />
-              </div>
-              <form
-                className="lc-compose"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  send()
-                }}
-              >
-                <input className="input" placeholder="Message everyone" value={msg} onChange={(e) => setMsg(e.target.value)} aria-label="Chat message" />
-                <button className="btn sm" type="submit" aria-label="Send message" disabled={!msg.trim()}>
-                  <Send size={15} />
-                </button>
-              </form>
-            </div>
-          )}
-
-          {tab === 'qa' && (
-            <div className="lc-pane">
-              <div className="lc-chat">
-                {!isHost && (
-                  <div className="lc-ask">
-                    <textarea className="textarea" placeholder="Ask the lecturer a question" value={qText} onChange={(e) => setQText(e.target.value)} rows={2} />
-                    <div className="row between">
-                      <label className="check xs">
-                        <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} /> Ask anonymously
-                      </label>
-                      <button className="btn sm" onClick={ask} disabled={!qText.trim()}>
-                        Post question
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {[...questions]
-                  .sort((a, b) => Number(a.answered) - Number(b.answered) || b.votes - a.votes)
-                  .map((q) => (
-                    <div key={q.id} className={`lc-q ${q.answered ? 'answered' : ''}`}>
-                      <button
-                        className={`lc-vote ${q.voted ? 'on' : ''}`}
-                        onClick={() => setQuestions((qs) => qs.map((x) => (x.id === q.id ? { ...x, voted: !x.voted, votes: x.votes + (x.voted ? -1 : 1) } : x)))}
-                        aria-label="Upvote question"
-                      >
-                        <ThumbsUp size={13} />
-                        <span className="num">{q.votes}</span>
-                      </button>
-                      <div className="grow">
-                        <p>{q.text}</p>
-                        <span className="xs">{q.from}</span>
-                        {q.answered && (
-                          <span className="xs c-green" style={{ marginLeft: 8 }}>
-                            <CheckCircle2 size={12} style={{ display: 'inline', verticalAlign: -2 }} /> Answered
-                          </span>
-                        )}
-                      </div>
-                      {isHost && !q.answered && (
-                        <button className="btn xs secondary" onClick={() => setQuestions((qs) => qs.map((x) => (x.id === q.id ? { ...x, answered: true } : x)))}>
-                          Mark answered
-                        </button>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {tab === 'poll' && (
-            <div className="lc-pane">
-              <div className="lc-chat">
-                {poll.state === 'draft' && !isHost && (
-                  <div className="empty" style={{ color: '#9aa7c4' }}>
-                    <Vote size={28} />
-                    <strong style={{ color: '#fff' }}>No poll yet</strong>
-                    When the lecturer starts a poll it appears here.
-                  </div>
-                )}
-                {(poll.state !== 'draft' || isHost) && (
-                  <div className="lc-poll">
-                    <span className="xs" style={{ color: '#9aa7c4' }}>
-                      {poll.state === 'draft' ? 'Ready to launch' : poll.state === 'open' ? `Poll open, ${pollTotal} responses` : `Poll closed, ${pollTotal} responses`}
-                    </span>
-                    <h3>{poll.question}</h3>
-                    {poll.options.map((o, i) => {
-                      const pct = pollTotal ? Math.round((o.votes / pollTotal) * 100) : 0
-                      const showResults = isHost || poll.myVote !== undefined || poll.state === 'closed'
-                      return (
-                        <button key={o.label} className={`lc-opt ${poll.myVote === i ? 'mine' : ''} ${poll.state === 'closed' && i === 1 ? 'correct' : ''}`} onClick={() => !isHost && vote(i)} disabled={isHost || poll.myVote !== undefined || poll.state !== 'open'}>
-                          {showResults && poll.state !== 'draft' && <span className="lc-opt-fill" style={{ width: `${pct}%` }} />}
-                          <span className="lc-opt-label">{o.label}</span>
-                          {showResults && poll.state !== 'draft' && <span className="num lc-opt-pct">{pct}%</span>}
-                        </button>
-                      )
-                    })}
-                    {poll.state === 'closed' && <p className="xs" style={{ color: '#9fe0bf', marginTop: 8 }}>Correct answer: hold and wait. Asking for everything up front means a process never holds one resource while waiting for another.</p>}
-                    {isHost && (
-                      <div className="row mt-2" style={{ gap: 8 }}>
-                        {poll.state === 'draft' && (
-                          <button className="btn gold sm" onClick={launchPoll}>
-                            Launch poll
-                          </button>
-                        )}
-                        {poll.state === 'open' && (
-                          <button className="btn gold sm" onClick={endPoll}>
-                            Close poll and share results
-                          </button>
-                        )}
-                        {poll.state === 'closed' && (
-                          <button className="btn secondary sm" onClick={launchPoll}>
-                            Run it again
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {tab === 'people' && (
+          {(
             <div className="lc-pane">
               <div className="lc-chat">
                 {isHost && (
@@ -1088,8 +756,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
               </div>
             </div>
           )}
-          {tab === 'attend' && hasAtt && attSess && <AttendancePane sess={attSess} att={att} onScan={() => setScanOpen(true)} onDevice={() => setDeviceOpen(true)} />}
-          {tab === 'room' && hasAtt && <RoomPane roomId={roomId} onVoice={() => setVoiceOpen(true)} />}
         </aside>
       </div>
 
@@ -1152,16 +818,10 @@ export default function LiveClassroom({ role }: { role: Role }) {
               <span>Room voice</span>
             </button>
           )}
-          {isHost && (
-            <button className="ctl" onClick={launchPoll} disabled={poll.state === 'open'}>
-              <Vote size={18} />
-              <span>Poll</span>
-            </button>
-          )}
           <button className="ctl lc-panel-toggle" onClick={() => setPanelOpen(true)}>
-            <MessageSquare size={18} />
-            <span>Chat</span>
-            {unread > 0 && <span className="lc-dot">{unread}</span>}
+            <Users size={18} />
+            <span>People</span>
+            {isHost && hands.length > 0 && <span className="lc-dot">{hands.length}</span>}
           </button>
         </div>
         <button className="btn danger lc-leave" onClick={() => (isHost ? setConfirmEnd(true) : finish())}>
@@ -1169,16 +829,37 @@ export default function LiveClassroom({ role }: { role: Role }) {
         </button>
       </footer>
 
-      {scanOpen && attSess && <RoomScanModal session={attSess} now={now} onFinish={(ids) => att.applyScan(ids)} onClose={() => setScanOpen(false)} />}
-      {deviceOpen && (
-        <FaceRecognitionModal
-          title="Scan with this device"
-          sub={`Look at this device's camera for ${SCAN_SECONDS} seconds. A recognised student is marked present for this class.`}
-          onClose={() => setDeviceOpen(false)}
-          onMatch={(id) => att.applyDeviceMatch(id)}
-        />
-      )}
       {voiceOpen && <VoiceCommand roomId={roomId} onClose={() => setVoiceOpen(false)} />}
+
+      <Modal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        title="Live assignment"
+        sub={`${course.code} ${course.title}, lecture ${session.lectureNo}`}
+        foot={
+          <button className="btn" onClick={() => setAssignOpen(false)}>
+            Got it
+          </button>
+        }
+      >
+        <div className="lc-assign-steps">
+          {[
+            ['Choose the assessment', 'Pick a lab or task from the course, with its steps and time limit.'],
+            ['Set up a lab for each student present', hasAtt && att.present.length ? `One ready-to-use lab per student marked present (${att.present.length} right now).` : 'One ready-to-use lab per student marked present, so take attendance first.'],
+            ['Watch progress live', 'See each student’s steps completed while they work.'],
+            ['End the assignment', 'Every student’s work is submitted automatically, ready for you to review and mark.'],
+          ].map(([t, d], i) => (
+            <div key={t} className="lc-assign-step">
+              <span>{i + 1}</span>
+              <div>
+                <strong className="small">{t}</strong>
+                <p className="xs muted">{d}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="xs muted mt-2">This is the entry point for live assignments. The full flow is added in the live assignment update.</p>
+      </Modal>
 
       <Modal
         open={breakout}
@@ -1277,12 +958,10 @@ export default function LiveClassroom({ role }: { role: Role }) {
             <dt>Attendance</dt>
             <dd>
               {hasAtt
-                ? `${att.present.length} marked present in the hall (${att.byCamera} by face recognition, ${att.byLecturer} by you), ${Math.max(0, attendees - att.counter)} joined online`
+                ? att.present.length
+                  ? `${att.present.length} marked present in the hall (${att.byCamera} by face recognition, ${att.byLecturer} by you), ${Math.max(0, attendees - att.counter)} joined online`
+                  : `${att.counter} in the hall and ${Math.max(0, attendees - att.counter)} online. Attendance not taken yet: use Review attendance.`
                 : `${attendees} students, 85 in the hall and ${attendees - 85} online`}
-            </dd>
-            <dt>Interaction</dt>
-            <dd>
-              {chat.length} chat messages, {questions.length} questions, {pollTotal} poll responses
             </dd>
             <dt>Recording</dt>
             <dd>{recording || recSecs > 0 ? 'Ready to publish with English and Malay captions' : 'Not recorded'}</dd>
@@ -1300,187 +979,6 @@ export default function LiveClassroom({ role }: { role: Role }) {
           </dl>
         )}
       </Modal>
-    </div>
-  )
-}
-
-/* ---------------- Day 4: attendance and room control in the live class (lecturer) ---------------- */
-
-type Att = ReturnType<typeof useLecAttendance>
-
-function AttendancePane({ sess, att, onScan, onDevice }: { sess: LecSession; att: Att; onScan: () => void; onDevice: () => void }) {
-  const { toast } = useDemo()
-  const faces = useFaces()
-  const [show, setShow] = useState<'absent' | 'present'>('absent')
-  const [q, setQ] = useState('')
-  const [limit, setLimit] = useState(30)
-  const rows = att.people.filter((p) => (show === 'present') === (att.marks[p.id]?.s === 'present') && (!q || `${p.name} ${p.idNo}`.toLowerCase().includes(q.toLowerCase())))
-  const absent = att.people.length - att.present.length
-
-  return (
-    <div className="lc-pane">
-      <div className="lc-chat">
-        <div className="lc-att-stats">
-          <div>
-            <strong>{att.present.length}</strong>
-            <span>present of {att.people.length}</span>
-          </div>
-          <div>
-            <strong>{att.byCamera}</strong>
-            <span>by face</span>
-          </div>
-          <div>
-            <strong>{att.byLecturer}</strong>
-            <span>by you</span>
-          </div>
-          <div>
-            <strong>{att.counter}</strong>
-            <span>in the hall</span>
-          </div>
-        </div>
-
-        {!att.scan ? (
-          <div className="lc-att-note info">
-            <ScanFace size={16} /> Start a face scan. The {sess.room.split(',')[0]} camera recognises the students in the hall and marks them present.
-          </div>
-        ) : att.gap > 0 ? (
-          <div className="lc-att-note warn">
-            <ScanFace size={16} />
-            <span>
-              {att.counter} in the hall, {att.presentStudents} marked present. <strong>{att.gap}</strong> not recognised: mark them below.
-            </span>
-          </div>
-        ) : (
-          <div className="lc-att-note ok">
-            <CheckCircle2 size={16} /> Everyone counted in the hall is marked present.
-          </div>
-        )}
-
-        <div className="lc-att-actions">
-          <button className="btn gold sm" onClick={onScan}>
-            <ScanFace size={15} /> {att.scan ? 'Scan again' : 'Start face scan'}
-          </button>
-          <button className="btn secondary sm" onClick={onDevice}>
-            <Laptop size={15} /> This device
-          </button>
-        </div>
-
-        <div className="seg dark lc-att-seg">
-          <button className={show === 'absent' ? 'on' : ''} onClick={() => (setShow('absent'), setLimit(30))}>
-            Absent ({absent})
-          </button>
-          <button className={show === 'present' ? 'on' : ''} onClick={() => (setShow('present'), setLimit(30))}>
-            Present ({att.present.length})
-          </button>
-        </div>
-        <div className="lc-att-search">
-          <Search size={14} />
-          <input className="input" placeholder="Find a student" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Find a student" />
-        </div>
-
-        {rows.slice(0, limit).map((p) => {
-          const m = att.marks[p.id]
-          const demo = p.id.startsWith('fp-')
-          return (
-            <div key={p.id} className="lc-person lc-att-row">
-              {demo && faces[p.id] ? <img className="face-thumb sm" src={faces[p.id].photo} alt="" /> : <Avatar name={p.name} size="sm" color={p.color} />}
-              <div className="grow" style={{ minWidth: 0 }}>
-                <div className="truncate">{p.name}</div>
-                <div className="lc-att-sub">{m?.s === 'present' ? (m.by === 'camera' ? `Face recognition, ${m.at}` : `Marked by you, ${m.at}`) : demo ? 'Demo participant' : p.idNo}</div>
-              </div>
-              {m?.s === 'present' ? (
-                <button className="btn xs secondary" onClick={() => att.mark(p.id, 'absent')} title="Mark absent">
-                  Undo
-                </button>
-              ) : (
-                <button
-                  className="btn xs gold"
-                  onClick={() => {
-                    att.mark(p.id, 'present')
-                    toast(`${p.name.split(' ').slice(0, 2).join(' ')} marked present.`)
-                  }}
-                >
-                  Mark present
-                </button>
-              )}
-            </div>
-          )
-        })}
-        {rows.length === 0 && <p className="xs" style={{ color: 'var(--lc-muted)' }}>{q ? 'No student matches.' : show === 'absent' ? 'Nobody is absent.' : 'Nobody is marked present yet.'}</p>}
-        {rows.length > limit && (
-          <button className="btn secondary sm" onClick={() => setLimit((l) => l + 50)}>
-            Show more ({rows.length - limit})
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function RoomPane({ roomId, onVoice }: { roomId: string; onVoice: () => void }) {
-  const { state, update, toast, audit } = useDemo()
-  const room = state.spaces.find((s) => s.id === roomId)
-  const devices = state.devices.filter((d) => d.spaceId === roomId)
-  const st = (id: string, t: Parameters<typeof defaultsFor>[0]) => state.deviceState[id] ?? defaultsFor(t)
-  const set = (id: string, name: string, t: Parameters<typeof defaultsFor>[0], patch: Partial<DeviceState>, msg: string) => {
-    update((s) => ({ ...s, deviceState: { ...s.deviceState, [id]: { ...(s.deviceState[id] ?? defaultsFor(t)), ...patch } } }))
-    audit({ actor: 'Dr. Farid Hakimi bin Zulkifli', area: 'Automation', action: 'Controlled device from live class', target: name, detail: `${msg}, ${room?.code ?? roomId}` })
-    toast(`${name}: ${msg}.`)
-  }
-  const switches = devices.filter((d) => isSwitch(d.type))
-  const door = devices.find((d) => d.type === 'Door controller')
-
-  return (
-    <div className="lc-pane">
-      <div className="lc-chat">
-        <div className="lc-people-head">{room?.name ?? 'Classroom'} devices</div>
-        <button className="btn gold sm" onClick={onVoice}>
-          <AudioLines size={15} /> Voice command
-        </button>
-        <p className="xs" style={{ color: 'var(--lc-muted)', margin: 0 }}>
-          Say “dim the lights to 30%” or “switch off the fan”, in English or Bahasa Melayu.
-        </p>
-        {switches.map((d) => {
-          const s = st(d.id, d.type)
-          const off = d.status === 'Offline'
-          return (
-            <div key={d.id} className="lc-person lc-dev">
-              <span className="grow truncate">
-                {(() => {
-                  const n = d.name.replace(`${room?.name ?? ''} `, '')
-                  return n.charAt(0).toUpperCase() + n.slice(1)
-                })()}
-                <span className="lc-att-sub">{off ? 'Offline' : s.on ? (d.type === 'Lights' && s.level < 100 ? `On, dimmed to ${s.level}%` : 'On') : 'Off'}</span>
-              </span>
-              <div className="onoff lc-onoff">
-                <button className={!off && s.on ? 'sel' : ''} disabled={off} onClick={() => !s.on && set(d.id, d.name, d.type, { on: true, ...(d.type === 'Lights' ? { level: 100 } : {}) }, 'switched on')}>
-                  On
-                </button>
-                <button className={!off && !s.on ? 'sel' : ''} disabled={off} onClick={() => s.on && set(d.id, d.name, d.type, { on: false }, 'switched off')}>
-                  Off
-                </button>
-              </div>
-            </div>
-          )
-        })}
-        {door && (
-          <div className="lc-person lc-dev">
-            <span className="grow truncate">
-              Door
-              <span className="lc-att-sub">{door.status === 'Offline' ? 'Offline' : st(door.id, door.type).locked ? 'Locked' : 'Unlocked'}</span>
-            </span>
-            <div className="onoff lc-onoff">
-              <button className={st(door.id, door.type).locked ? 'sel' : ''} disabled={door.status === 'Offline'} onClick={() => !st(door.id, door.type).locked && set(door.id, door.name, door.type, { locked: true }, 'locked')}>
-                <Lock size={13} /> Lock
-              </button>
-              <button className={!st(door.id, door.type).locked ? 'sel' : ''} disabled={door.status === 'Offline'} onClick={() => st(door.id, door.type).locked && set(door.id, door.name, door.type, { locked: false }, 'unlocked')}>
-                <LockOpen size={13} /> Unlock
-              </button>
-            </div>
-          </div>
-        )}
-        {devices.length === 0 && <p className="xs" style={{ color: 'var(--lc-muted)' }}>No devices are paired to this room yet.</p>}
-      </div>
     </div>
   )
 }
