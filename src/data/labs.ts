@@ -111,6 +111,22 @@ export interface LiveAssignment {
   startedAt: string // clock label
   endedAt?: string
   marks: Record<string, { mark: number; feedback: string }>
+  // Students working in their own lab screen (real clicks), instead of the simulation
+  driven?: Record<string, DrivenLab>
+}
+
+export interface DrivenLab {
+  done: number
+  at: number // lab minute of the last step done (or when the lab was opened)
+  log: string[] // terminal output, newest last
+  help?: boolean // the student asked for help
+}
+
+/** What the student does for a step: run a command in the terminal, or save a file in the editor. */
+export function actionOf(step: LabStep): { kind: 'run' | 'save'; command: string; output: string } {
+  const lines = step.evidence.split('\n')
+  if (lines[0].startsWith('$ ')) return { kind: 'run', command: lines[0].slice(2), output: lines.slice(1).join('\n') }
+  return { kind: 'save', command: step.evidence.startsWith('answer.md') ? 'answer.md' : step.evidence.startsWith('def ') || step.evidence.includes('(') ? 'code' : 'file', output: step.evidence }
 }
 
 export const limitOf = (a: LiveAssignment) => a.template.minutes + a.extraMin
@@ -143,6 +159,11 @@ export interface StudentProgress {
 /** Where one student is at a given lab minute. Deterministic per assignment and student. */
 export function progressOf(a: LiveAssignment, studentId: string, t: number): StudentProgress {
   const n = a.template.steps.length
+  const d = a.driven?.[studentId]
+  if (d) {
+    const state: LabState = a.status !== 'running' ? 'Submitted' : d.done >= n ? 'Finished' : d.help ? 'Needs help' : 'Working'
+    return { done: Math.min(n, d.done), state, lastActivityMin: d.at }
+  }
   const key = `${a.id}|${studentId}`
   // demo participant (Pranav) works steadily and finishes
   const demo = studentId.startsWith('fp-')

@@ -364,10 +364,12 @@ function LabViewer({ a, id, p, onClose }: { a: LiveAssignment; id: string; p: St
             <em>Terminal, view only</em>
           </div>
           <pre>
-            {steps
-              .slice(0, p.done)
-              .map((s) => s.evidence)
-              .join('\n\n') || '$ Lab started. Waiting for the student’s first command…'}
+            {a.driven?.[id]
+              ? a.driven[id].log.join('\n')
+              : steps
+                  .slice(0, p.done)
+                  .map((s) => s.evidence)
+                  .join('\n\n') || '$ Lab started. Waiting for the student’s first command…'}
             {a.status === 'running' && p.done < steps.length ? '\n\n$ ▍' : ''}
           </pre>
         </div>

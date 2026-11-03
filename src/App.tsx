@@ -15,6 +15,7 @@ import StudentAssignments from './pages/student/StudentAssignments'
 import StudentRecordings from './pages/student/StudentRecordings'
 import StudentGrades from './pages/student/StudentGrades'
 import StudyAssistant from './pages/student/StudyAssistant'
+import StudentLab from './pages/student/StudentLab'
 
 import LecturerHome from './pages/lecturer/LecturerHome'
 import LecturerCourses from './pages/lecturer/LecturerCourses'
@@ -56,6 +57,8 @@ export default function App() {
           <Route path="recordings" element={<StudentRecordings />} />
           <Route path="grades" element={<StudentGrades />} />
           <Route path="assistant" element={<StudyAssistant />} />
+          <Route path="lab" element={<StudentLab />} />
+          <Route path="lab/:id" element={<StudentLab />} />
           <Route path="announcements" element={<Announcements role="student" />} />
           <Route path="*" element={<NotFound />} />
         </Route>

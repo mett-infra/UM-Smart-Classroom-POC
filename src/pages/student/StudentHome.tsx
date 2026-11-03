@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
-import { CalendarClock, ClipboardCheck, MapPin, PlayCircle, Radio, Video } from 'lucide-react'
+import { CalendarClock, ClipboardCheck, FlaskConical, MapPin, PlayCircle, Radio, Video } from 'lucide-react'
 import { courseById, courses, lecturerName, liveSessionId, personas, sessions, studentCourseIds } from '../../data/mock'
 import { Badge, Bar, LiveBadge, Metric, PageHead, Panel, daysLeft, fmtDue } from '../../components/ui'
 import { useDemo } from '../../store/DemoStore'
+import { labFor } from './labAccess'
+import { limitOf, totalMarks } from '../../data/labs'
+import { fmtLab, useLabClock } from '../lecturer/labClock'
+import '../../styles/student-lab.css'
 import { MaterialIcon, materialTint } from '../lecturer/lecturerUtils'
 
 export default function StudentHome() {
@@ -18,6 +22,8 @@ export default function StudentHome() {
   const graded = state.assignments.filter((a) => studentCourseIds.includes(a.courseId) && a.status === 'Graded' && a.score !== undefined)
   const avg = Math.round(graded.reduce((n, a) => n + (a.score ?? 0), 0) / Math.max(1, graded.length))
   const credits = mine.reduce((n, c) => n + c.credits, 0)
+  const lab = labFor(state.liveAssignments)
+  const labT = useLabClock(lab)
   const anns = state.announcements.filter((a) => !a.courseId || studentCourseIds.includes(a.courseId)).slice(0, 3)
 
   // next unfinished item per course
@@ -35,6 +41,41 @@ export default function StudentHome() {
   return (
     <>
       <PageHead title={`Selamat pagi, ${p.short}`} sub={`Wednesday, 21 October. You have 4 classes today and ${due.filter((a) => a.due < '2026-10-26').length} deadlines this week.`} />
+
+      {lab && lab.status === 'running' && (
+        <div className="lab-banner" role="status">
+          <span className="icon-tile">
+            <FlaskConical size={20} />
+          </span>
+          <div className="grow">
+            <span className="xs strong c-gold">Live assignment started in {lab.courseCode}</span>
+            <h3>{lab.template.title}</h3>
+            <p className="small muted" style={{ margin: 0 }}>
+              Your own lab is ready. {fmtLab(limitOf(lab) - labT)} left. Your work is submitted automatically when the lab ends.
+            </p>
+          </div>
+          <Link to={`/student/lab/${lab.id}`} className="btn gold">
+            Open your lab
+          </Link>
+        </div>
+      )}
+      {lab && lab.status === 'released' && (
+        <div className="lab-banner" role="status">
+          <span className="icon-tile">
+            <FlaskConical size={20} />
+          </span>
+          <div className="grow">
+            <span className="xs strong c-gold">Marks released</span>
+            <h3>
+              {lab.template.title}: {lab.marks['st1'] ? `${lab.marks['st1'].mark}/${totalMarks(lab.template)}` : 'see your lab'}
+            </h3>
+            {lab.marks['st1']?.feedback && <p className="small muted" style={{ margin: 0 }}>“{lab.marks['st1'].feedback}”</p>}
+          </div>
+          <Link to={`/student/lab/${lab.id}`} className="btn secondary">
+            View my lab
+          </Link>
+        </div>
+      )}
 
       <div className="live-banner">
         <span className="icon-tile" style={{ background: 'rgba(255,255,255,.08)', color: '#fff' }}>

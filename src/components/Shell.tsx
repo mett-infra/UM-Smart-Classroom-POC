@@ -35,6 +35,7 @@ import type { Role } from '../data/types'
 import { useDemo } from '../store/DemoStore'
 import { Avatar } from './ui'
 import { IncidentWatch } from './IncidentWatch'
+import { labFor } from '../pages/student/labAccess'
 import { VoiceCommand } from './VoiceCommand'
 
 export function BrandMark({ size = 38 }: { size?: number }) {
@@ -63,6 +64,7 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
   const openTickets = state.tickets.filter((t) => t.status !== 'Resolved').length
   const openIncidents = state.incidents.filter((i) => !['Resolved', 'False positive'].includes(i.status)).length
   const s = 18
+  const studentLab = labFor(state.liveAssignments)
   if (role === 'student')
     return [
       {
@@ -70,6 +72,7 @@ function useNav(role: Role): { heading: string; items: NavItem[] }[] {
         items: [
           { to: '/student', label: 'Home', icon: <Home size={s} />, end: true },
           { to: `/student/live/${liveSessionId}`, label: 'Live class', icon: <Radio size={s} />, live: true },
+          ...(studentLab ? [{ to: '/student/lab', label: 'Live lab', icon: <FlaskConical size={s} />, live: studentLab.status === 'running' }] : []),
           { to: '/student/courses', label: 'My courses', icon: <BookOpen size={s} /> },
           { to: '/student/assignments', label: 'Assignments', icon: <ClipboardCheck size={s} />, count: pending },
           { to: '/student/timetable', label: 'Timetable', icon: <CalendarDays size={s} /> },

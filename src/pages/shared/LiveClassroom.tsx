@@ -36,6 +36,7 @@ import { useLecAttendance, useNow } from '../lecturer/useLecAttendance'
 import { LiveAssignmentSetup } from '../lecturer/LiveAssignmentSetup'
 import { fmtLab, useLabActions, useLabClock } from '../lecturer/labClock'
 import { limitOf, progressOf } from '../../data/labs'
+import { labFor } from '../student/labAccess'
 
 type StageTab = 'slides' | 'board' | 'screen'
 
@@ -378,6 +379,8 @@ export default function LiveClassroom({ role }: { role: Role }) {
   const labT = useLabClock(la)
   const labActions = useLabActions()
   const monitorUrl = la ? `${import.meta.env.BASE_URL}lecturer/live-assignments/${la.id}` : ''
+  const myLab = !isHost ? labFor(state.liveAssignments) : undefined
+  const myLabT = useLabClock(myLab)
 
 
   const camRef = useRef<HTMLVideoElement>(null)
@@ -610,6 +613,11 @@ export default function LiveClassroom({ role }: { role: Role }) {
                 'Live assignment'
               )}
             </button>
+          )}
+          {myLab && myLab.status === 'running' && (
+            <a className="lc-assign-chip running" href={`${import.meta.env.BASE_URL}student/lab/${myLab.id}`} target="_blank" rel="noreferrer" title="Your lecturer started a live assignment">
+              <FlaskConical size={14} /> Open your lab <span className="num">{fmtLab(limitOf(myLab) - myLabT)}</span>
+            </a>
           )}
           <span className="lc-count">
             <Users size={15} /> {attendees}
