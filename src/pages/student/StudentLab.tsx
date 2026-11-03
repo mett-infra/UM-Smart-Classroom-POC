@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CheckCircle2, Circle, Clock, FlaskConical, Hand, Lock, Play, Save, Send, Terminal } from 'lucide-react'
-import { Badge, Empty, Notice, PageHead, Panel, Ring } from '../../components/ui'
+import { Avatar, Badge, Empty, Notice, PageHead, Panel, Ring } from '../../components/ui'
 import { actionOf, limitOf, progressOf, totalMarks, type DrivenLab, type LiveAssignment } from '../../data/labs'
 import { useDemo } from '../../store/DemoStore'
-import { fmtLab, nameOf, useLabClock } from '../lecturer/labClock'
-import { DEMO_ID, labFor, viewersOf } from './labAccess'
+import { colorOf, fmtLab, nameOf, useLabClock } from '../lecturer/labClock'
+import { DEMO_ID, labFor, runningWithoutMe, viewersOf } from './labAccess'
 import '../../styles/lecturer.css'
 import '../../styles/student-lab.css'
 
@@ -21,6 +21,19 @@ export default function StudentLab() {
   const { state } = useDemo()
   const a = labFor(state.liveAssignments, id)
 
+  const notMine = !a ? runningWithoutMe(state.liveAssignments) : undefined
+  if (!a && notMine) {
+    return (
+      <>
+        <PageHead title="Live lab" sub={`${notMine.courseCode}: ${notMine.template.title}`} />
+        <Panel>
+          <Empty icon={<FlaskConical size={28} />} title="Your lab isn’t set up yet">
+            Labs are set up for the students marked present. Ask your lecturer to mark you present in Attendance, and your lab opens here straight away.
+          </Empty>
+        </Panel>
+      </>
+    )
+  }
   if (!a) {
     return (
       <>
@@ -40,6 +53,14 @@ function LabScreen({ a }: { a: LiveAssignment }) {
   const { update, toast } = useDemo()
   const viewers = viewersOf(a)
   const [who, setWho] = useState(viewers.includes(DEMO_ID) ? DEMO_ID : viewers[0])
+  // If the demo participant's lab is added later (marked present after the start), show it.
+  const hadDemo = useRef(viewers.includes(DEMO_ID))
+  useEffect(() => {
+    if (viewers.includes(DEMO_ID) && !hadDemo.current) {
+      hadDemo.current = true
+      setWho(DEMO_ID)
+    }
+  }, [viewers])
   const t = useLabClock(a)
   const steps = a.template.steps
   const n = steps.length
@@ -133,6 +154,13 @@ function LabScreen({ a }: { a: LiveAssignment }) {
 
       {running ? (
         <div className={`lab-status ${left < 5 ? 'urgent' : ''}`}>
+          <span className="lab-who">
+            <Avatar name={nameOf(who)} color={colorOf(who)} size="sm" />
+            <span>
+              <strong className="small">{nameOf(who)}</strong>
+              <span className="xs muted">{who === DEMO_ID ? 'Demo participant' : 'Student'}</span>
+            </span>
+          </span>
           <span className="lab-status-time">
             <Clock size={18} /> <strong className="num">{fmtLab(left)}</strong> left
           </span>

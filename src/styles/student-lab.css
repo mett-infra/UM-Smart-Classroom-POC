@@ -276,3 +276,24 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.lab-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+}
+
+.lab-who > span:last-child {
+  display: grid;
+  line-height: 1.25;
+}
+
+@media (max-width: 640px) {
+  .lab-who {
+    border-right: 0;
+    padding-right: 0;
+    width: 100%;
+  }
+}

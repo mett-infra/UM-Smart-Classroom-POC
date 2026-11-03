@@ -14,7 +14,7 @@ export function useNow(every = 15000) {
 }
 
 export function useLecAttendance(sess: LecSession, now: number) {
-  const { state, update, log } = useDemo()
+  const { state, update, log, toast } = useDemo()
   const sid = sess.id
   const today = isToday(sess)
   const people = useMemo(() => classList(sess), [sess])
@@ -27,15 +27,25 @@ export function useLecAttendance(sess: LecSession, now: number) {
   const presentStudents = present.filter((p) => !p.id.startsWith('fp-')).length
   const gap = counter - presentStudents
 
-  const setMarks = (ids: string[], mark: AttMark | null) =>
+  const setMarks = (ids: string[], mark: AttMark | null) => {
+    // A student marked present while a live assignment is running (a late arrival) gets a lab straight away.
+    const running = state.liveAssignments.find((a) => a.sessionId === sid && a.status === 'running')
+    const late = mark?.s === 'present' && running ? ids.filter((id) => !running.studentIds.includes(id)) : []
     update((s) => {
       const cur = { ...(s.lecAttendance[sid] ?? {}) }
       ids.forEach((id) => {
         if (mark) cur[id] = mark
         else delete cur[id]
       })
-      return { ...s, lecAttendance: { ...s.lecAttendance, [sid]: cur } }
+      const liveAssignments = late.length ? s.liveAssignments.map((a) => (a.id === running!.id ? { ...a, studentIds: [...a.studentIds, ...late.filter((id) => !a.studentIds.includes(id))] } : a)) : s.liveAssignments
+      return { ...s, lecAttendance: { ...s.lecAttendance, [sid]: cur }, liveAssignments }
     })
+    if (late.length) {
+      const who = late.length === 1 ? people.find((p) => p.id === late[0])?.name ?? 'the student' : `${late.length} students`
+      toast(`A lab was set up for ${who}, who joined the live assignment late.`, 'info')
+      log({ text: `Lab added for a late arrival`, sub: `${who}, ${running!.template.title}`, kind: 'submit' })
+    }
+  }
 
   /** The lecturer sets one student present or absent. */
   const mark = (id: string, v: 'present' | 'absent') => {

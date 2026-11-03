@@ -92,6 +92,8 @@ Built from the meeting with the Deputy Dean and the functional specification (v1
 - When a live assignment starts, the student sees **Open your lab** on their home page, in the live class top bar and as **Live lab** in the menu.
 - **Lab screen:** steps and instructions on the left; on the right, progress (steps done, marks so far, time left) and a terminal. The current step has a **Run** button (or **Enter** in the terminal) that runs the command, shows the output and ticks the step. **Ask for help** flags the student on the lecturer's monitor.
 - Every step shows on the lecturer's live monitor straight away (open the student and lecturer in two tabs of the same browser). The demo participant (Pranav) and the student persona (Aina) each have a real lab when marked present; pick one with "Demo: lab of".
+- **Late arrivals:** a student marked present after the assignment started (by the face scan or by the lecturer) gets a lab straight away, and appears on the monitor.
+- The lab screen shows whose lab it is at the top. If a student has no lab yet, it tells them to ask the lecturer to mark them present.
 - When the lecturer ends the assignment, or time runs out, the lab locks with "Submitted automatically". After **Release marks**, the student sees their mark and feedback on the lab and home page.
 
 ## Suggested demo path (about 10 minutes)

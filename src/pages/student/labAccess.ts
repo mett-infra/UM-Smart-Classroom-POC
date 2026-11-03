@@ -14,3 +14,6 @@ export function labFor(list: LiveAssignment[], id?: string) {
 }
 
 export const viewersOf = (a: LiveAssignment) => [DEMO_ID, STUDENT_ID].filter((x) => a.studentIds.includes(x))
+
+/** A running assignment the student has no lab in (they were not marked present when it started). */
+export const runningWithoutMe = (list: LiveAssignment[]) => list.find((a) => a.status === 'running' && !a.studentIds.includes(STUDENT_ID) && !a.studentIds.includes(DEMO_ID))
